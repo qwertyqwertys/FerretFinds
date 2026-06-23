@@ -13,7 +13,7 @@
     <header class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 pt-6 pb-4">
         <div class="flex items-center justify-between max-w-md mx-auto">
             <h1 class="text-xl font-black tracking-tight text-emerald-400"><i class="fa-solid fa-mask mr-2"></i>FerretFinds</h1>
-            <span class="text-xs bg-slate-800 border border-slate-700 px-2 py-1 rounded-full text-slate-400 font-mono">v4.5-Expanded</span>
+            <span class="text-xs bg-slate-800 border border-slate-700 px-2 py-1 rounded-full text-slate-400 font-mono">v5.0-Pricing</span>
         </div>
     </header>
 
@@ -52,31 +52,31 @@
     </main>
 
     <script>
-        // Massive inventory database update containing multiple real-world markdown patterns
+        // Inventory database upgraded with original and clearance prices
         const loadedCloudItems = [
             // Dollar General (DG) Items
-            { store: "DG", name: "Ghirardelli Chocolate Hearts 2.7oz", upc: "034759012234", accuracy: 98, added: "Tuesday Penny" },
-            { store: "DG", name: "Colgate MaxFresh Clean Mint Paste 6oz", upc: "035000456128", accuracy: 95, added: "Tuesday Penny" },
-            { store: "DG", name: "Gain Liquid Detergent Original 46oz", upc: "037000758312", accuracy: 88, added: "Clearance 90% Off" },
-            { store: "DG", name: "Comfort Bay Standard Bed Pillow", upc: "074523001429", accuracy: 92, added: "Tuesday Penny" },
-            { store: "DG", name: "Doritos Nacho Cheese Party Size 15oz", upc: "028400313982", accuracy: 75, added: "Inventory Reset" },
-            { store: "DG", name: "Goldfish Cheddar Crackers Baked 6.6oz", upc: "014100078231", accuracy: 94, added: "Tuesday Penny" },
-            { store: "DG", name: "Hefty Slider Storage Bags Quart 20ct", upc: "013700021543", accuracy: 82, added: "Clearance 90% Off" },
-            { store: "DG", name: "Energizer MAX AA Batteries 4-Pack", upc: "039800011329", accuracy: 90, added: "Price Drop" },
+            { store: "DG", name: "Ghirardelli Chocolate Hearts 2.7oz", upc: "034759012234", accuracy: 98, added: "Tuesday Penny", originalPrice: "$4.25", clearancePrice: "$0.01" },
+            { store: "DG", name: "Colgate MaxFresh Clean Mint Paste 6oz", upc: "035000456128", accuracy: 95, added: "Tuesday Penny", originalPrice: "$3.50", clearancePrice: "$0.01" },
+            { store: "DG", name: "Gain Liquid Detergent Original 46oz", upc: "037000758312", accuracy: 88, added: "Clearance 90% Off", originalPrice: "$6.50", clearancePrice: "$0.65" },
+            { store: "DG", name: "Comfort Bay Standard Bed Pillow", upc: "074523001429", accuracy: 92, added: "Tuesday Penny", originalPrice: "$5.00", clearancePrice: "$0.01" },
+            { store: "DG", name: "Doritos Nacho Cheese Party Size 15oz", upc: "028400313982", accuracy: 75, added: "Inventory Reset", originalPrice: "$5.99", clearancePrice: "$1.49" },
+            { store: "DG", name: "Goldfish Cheddar Crackers Baked 6.6oz", upc: "014100078231", accuracy: 94, added: "Tuesday Penny", originalPrice: "$2.75", clearancePrice: "$0.01" },
+            { store: "DG", name: "Hefty Slider Storage Bags Quart 20ct", upc: "013700021543", accuracy: 82, added: "Clearance 90% Off", originalPrice: "$3.85", clearancePrice: "$0.38" },
+            { store: "DG", name: "Energizer MAX AA Batteries 4-Pack", upc: "039800011329", accuracy: 90, added: "Price Drop", originalPrice: "$5.50", clearancePrice: "$1.25" },
 
             // Home Depot (HD) Items
-            { store: "HD", name: "HDX 5-Gallon Heavy Duty Mixing Bucket", upc: "044315893214", accuracy: 85, added: "Active Markdown" },
-            { store: "HD", name: "Milwaukee SHOCKWAVE Driver Bit Set (45-Piece)", upc: "045242534125", accuracy: 91, added: "Yellow Tag Clearance" },
-            { store: "HD", name: "Ryobi 18V ONE+ Cordless Hand Vacuum", upc: "033287175234", accuracy: 78, added: "Display Markdown" },
-            { store: "HD", name: "Defiant 9-LED Flashlight Multipack (3ct)", upc: "084214811029", accuracy: 89, added: "Yellow Tag Clearance" },
-            { store: "HD", name: "Husky 16oz Fiberglass Claw Hammer", upc: "037103284152", accuracy: 96, added: "Active Markdown" },
-            { store: "HD", name: "Gorilla Super Glue Gel 15g", upc: "052427004031", accuracy: 93, added: "Price Match" },
+            { store: "HD", name: "HDX 5-Gallon Heavy Duty Mixing Bucket", upc: "044315893214", accuracy: 85, added: "Active Markdown", originalPrice: "$4.48", clearancePrice: "$1.03" },
+            { store: "HD", name: "Milwaukee SHOCKWAVE Driver Bit Set (45-Piece)", upc: "045242534125", accuracy: 91, added: "Yellow Tag Clearance", originalPrice: "$29.97", clearancePrice: "$7.03" },
+            { store: "HD", name: "Ryobi 18V ONE+ Cordless Hand Vacuum", upc: "033287175234", accuracy: 78, added: "Display Markdown", originalPrice: "$34.97", clearancePrice: "$9.03" },
+            { store: "HD", name: "Defiant 9-LED Flashlight Multipack (3ct)", upc: "084214811029", accuracy: 89, added: "Yellow Tag Clearance", originalPrice: "$9.97", clearancePrice: "$2.53" },
+            { store: "HD", name: "Husky 16oz Fiberglass Claw Hammer", upc: "037103284152", accuracy: 96, added: "Active Markdown", originalPrice: "$12.97", clearancePrice: "$3.03" },
+            { store: "HD", name: "Gorilla Super Glue Gel 15g", upc: "052427004031", accuracy: 93, added: "Price Match", originalPrice: "$6.47", clearancePrice: "$1.50" },
 
             // Dollar Tree (DT) Items
-            { store: "DT", name: "Assorted Licensed Character Socks", upc: "072554110943", accuracy: 70, added: "System Reset" },
-            { store: "DT", name: "Crayola Classic Crayons 24ct", upc: "071662000246", accuracy: 97, added: "Overstock Drop" },
-            { store: "DT", name: "Reynolds Wrap Aluminum Foil 25 sq ft", upc: "010900000105", accuracy: 85, added: "System Reset" },
-            { store: "DT", name: "Palmolive Essential Clean Liquid 8oz", upc: "035000014106", accuracy: 91, added: "Warehouse Clear" }
+            { store: "DT", name: "Assorted Licensed Character Socks", upc: "072554110943", accuracy: 70, added: "System Reset", originalPrice: "$1.25", clearancePrice: "$0.25" },
+            { store: "DT", name: "Crayola Classic Crayons 24ct", upc: "071662000246", accuracy: 97, added: "Overstock Drop", originalPrice: "$1.25", clearancePrice: "$0.50" },
+            { store: "DT", name: "Reynolds Wrap Aluminum Foil 25 sq ft", upc: "010900000105", accuracy: 85, added: "System Reset", originalPrice: "$1.25", clearancePrice: "$0.25" },
+            { store: "DT", name: "Palmolive Essential Clean Liquid 8oz", upc: "035000014106", accuracy: 91, added: "Warehouse Clear", originalPrice: "$1.25", clearancePrice: "$0.25" }
         ];
 
         async function searchStoresGlobally() {
@@ -202,7 +202,6 @@
             const pennyListContainer = document.getElementById("pennyList");
             dealSection.classList.remove("hidden");
 
-            // Pull items belonging only to the selected brand category
             const storeSpecificDeals = loadedCloudItems.filter(item => item.store === brand);
 
             if(storeSpecificDeals.length === 0) {
@@ -219,7 +218,12 @@
                                 <span class="text-xs font-mono font-bold text-emerald-400">${item.added}</span>
                                 <span class="text-xs text-slate-500 font-mono">${item.accuracy}% Scan Match</span>
                             </div>
-                            <h4 class="font-bold text-slate-100 text-base leading-snug">${item.name}</h4>
+                            <h4 class="font-bold text-slate-100 text-base leading-snug mb-2">${item.name}</h4>
+                            
+                            <div class="flex items-baseline gap-2 mb-1">
+                                <span class="text-xs text-slate-400 line-through font-mono">Reg: ${item.originalPrice}</span>
+                                <span class="text-lg font-black text-emerald-400 font-mono">Now: ${item.clearancePrice}</span>
+                            </div>
                         </div>
                         <div class="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl p-2 justify-between">
                             <span class="font-mono text-xs text-slate-300 tracking-wider">${item.upc}</span>
