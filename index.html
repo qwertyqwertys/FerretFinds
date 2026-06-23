@@ -13,9 +13,15 @@
     <header class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 pt-6 pb-4">
         <div class="flex items-center justify-between max-w-md mx-auto">
             <h1 class="text-xl font-black tracking-tight text-emerald-400"><i class="fa-solid fa-mask mr-2"></i>FerretFinds</h1>
-            <span id="syncBadge" class="text-xs bg-amber-500/10 border border-amber-500/30 px-2 py-1 rounded-full text-amber-400 font-mono flex items-center gap-1">
-                <i class="fa-solid fa-circle-notch animate-spin text-[10px]"></i> Syncing Live...
-            </span>
+            
+            <div class="flex flex-col items-end gap-1">
+                <span id="syncBadge" class="text-xs bg-amber-500/10 border border-amber-500/30 px-2 py-1 rounded-full text-amber-400 font-mono flex items-center gap-1">
+                    <i class="fa-solid fa-circle-notch animate-spin text-[10px]"></i> Syncing Live...
+                </span>
+                <span id="countdownTimer" class="text-[10px] text-slate-400 font-mono">
+                    <i class="fa-regular fa-clock mr-1"></i>Next sweep: <span id="timerMinutes">59</span>m <span id="timerSeconds">59</span>s
+                </span>
+            </div>
         </div>
     </header>
 
@@ -100,14 +106,48 @@
                     }
                 }
             } catch (e) {
-    console.log("Re-indexing server streams...");
-}
+                console.log("Re-indexing server streams...");
+            }
             
             syncBadge.className = "text-xs bg-slate-800 border border-slate-700 px-2 py-1 rounded-full text-slate-400 font-mono flex items-center gap-1";
             syncBadge.innerHTML = `<i class="fa-solid fa-shield"></i> Local Feed Secured`;
         }
 
-        window.addEventListener('DOMContentLoaded', autoScrapeLiveFeeds);
+        function startHourlyCountdown() {
+            const minutesDisplay = document.getElementById('timerMinutes');
+            const secondsDisplay = document.getElementById('timerSeconds');
+
+            function updateTimer() {
+                const now = new Date();
+                
+                // Calculate how many minutes and seconds are left until the exact next hour on the clock
+                const minutesLeft = 59 - now.getMinutes();
+                const secondsLeft = 59 - now.getSeconds();
+
+                // Format numbers nicely (e.g., "05" instead of just "5")
+                minutesDisplay.innerText = minutesLeft.toString().padStart(2, '0');
+                secondsDisplay.innerText = secondsLeft.toString().padStart(2, '0');
+
+                // If the clock hits 00:00, briefly pulse the UI and check for server changes
+                if (minutesLeft === 0 && secondsLeft === 0) {
+                    document.getElementById('syncBadge').className = "text-xs bg-amber-500/10 border border-amber-500/30 px-2 py-1 rounded-full text-amber-400 font-mono flex items-center gap-1";
+                    document.getElementById('syncBadge').innerHTML = `<i class="fa-solid fa-circle-notch animate-spin text-[10px]"></i> Pulling...`;
+                    setTimeout(() => {
+                        autoScrapeLiveFeeds(); // Re-trigger the browser's background pull
+                    }, 2000);
+                }
+            }
+
+            // Run it once immediately, then tick every single second
+            updateTimer();
+            setInterval(updateTimer, 1000);
+        }
+
+        // Initialize engines as soon as DOM content is ready
+        window.addEventListener('DOMContentLoaded', () => {
+            autoScrapeLiveFeeds();
+            startHourlyCountdown();
+        });
 
         async function searchStoresGlobally() {
             const zip = document.getElementById("zipInput").value.trim();
