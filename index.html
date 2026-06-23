@@ -209,7 +209,7 @@
             }
         }
 
-        fnction copyUPC(upc, button) {
+        function copyUPC(upc, button) {
             navigator.clipboard.writeText(upc).then(() => {
                 const span = button.querySelector('span');
                 span.innerText = 'Copied!';
