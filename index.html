@@ -13,7 +13,7 @@
     <header class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 pt-6 pb-4">
         <div class="flex items-center justify-between max-w-md mx-auto">
             <h1 class="text-xl font-black tracking-tight text-emerald-400"><i class="fa-solid fa-mask mr-2"></i>FerretFinds</h1>
-            <span class="text-xs bg-slate-800 border border-slate-700 px-2 py-1 rounded-full text-slate-400 font-mono">v5.0-Pricing</span>
+            <span class="text-xs bg-slate-800 border border-slate-700 px-2 py-1 rounded-full text-slate-400 font-mono">v6.0-SmartSort</span>
         </div>
     </header>
 
@@ -45,6 +45,24 @@
             <i class="fa-solid fa-circle-check text-emerald-400 text-xl"></i>
         </div>
 
+        <section id="controlsSection" class="hidden bg-slate-800/30 border border-slate-800 rounded-2xl p-4 space-y-3">
+            <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Filter Deal Types</label>
+                <div class="grid grid-cols-3 gap-1.5">
+                    <button onclick="setFilter('all')" id="filter-all" class="bg-emerald-500 text-slate-950 font-bold text-xs py-2 rounded-xl transition active:scale-95">All</button>
+                    <button onclick="setFilter('penny')" id="filter-penny" class="bg-slate-950 hover:bg-slate-850 text-slate-300 font-semibold text-xs py-2 rounded-xl transition active:scale-95">Pennies</button>
+                    <button onclick="setFilter('markdown')" id="filter-markdown" class="bg-slate-950 hover:bg-slate-850 text-slate-300 font-semibold text-xs py-2 rounded-xl transition active:scale-95">Markdowns</button>
+                </div>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Sort Priority</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="setSort('discount')" id="sort-discount" class="bg-slate-950 hover:bg-slate-850 border border-emerald-500/30 text-emerald-400 font-bold text-xs py-2 rounded-xl flex items-center justify-center gap-1 transition active:scale-95"><i class="fa-solid fa-arrow-down-9-1"></i> Biggest % Off</button>
+                    <button onclick="setSort('price')" id="sort-price" class="bg-slate-950 hover:bg-slate-850 border border-slate-800 text-slate-400 font-semibold text-xs py-2 rounded-xl flex items-center justify-center gap-1 transition active:scale-95"><i class="fa-solid fa-arrow-up-1-9"></i> Lowest Price</button>
+                </div>
+            </div>
+        </section>
+
         <section id="dealSection" class="hidden space-y-3">
             <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400"><i class="fa-solid fa-barcode mr-1"></i> 3. Current Live Penny List / Markdowns</h3>
             <div id="pennyList" class="space-y-3"></div>
@@ -52,32 +70,36 @@
     </main>
 
     <script>
-        // Inventory database upgraded with original and clearance prices
+        // Database upgraded with strict floats for backend mathematical computations (sorting percentages)
         const loadedCloudItems = [
             // Dollar General (DG) Items
-            { store: "DG", name: "Ghirardelli Chocolate Hearts 2.7oz", upc: "034759012234", accuracy: 98, added: "Tuesday Penny", originalPrice: "$4.25", clearancePrice: "$0.01" },
-            { store: "DG", name: "Colgate MaxFresh Clean Mint Paste 6oz", upc: "035000456128", accuracy: 95, added: "Tuesday Penny", originalPrice: "$3.50", clearancePrice: "$0.01" },
-            { store: "DG", name: "Gain Liquid Detergent Original 46oz", upc: "037000758312", accuracy: 88, added: "Clearance 90% Off", originalPrice: "$6.50", clearancePrice: "$0.65" },
-            { store: "DG", name: "Comfort Bay Standard Bed Pillow", upc: "074523001429", accuracy: 92, added: "Tuesday Penny", originalPrice: "$5.00", clearancePrice: "$0.01" },
-            { store: "DG", name: "Doritos Nacho Cheese Party Size 15oz", upc: "028400313982", accuracy: 75, added: "Inventory Reset", originalPrice: "$5.99", clearancePrice: "$1.49" },
-            { store: "DG", name: "Goldfish Cheddar Crackers Baked 6.6oz", upc: "014100078231", accuracy: 94, added: "Tuesday Penny", originalPrice: "$2.75", clearancePrice: "$0.01" },
-            { store: "DG", name: "Hefty Slider Storage Bags Quart 20ct", upc: "013700021543", accuracy: 82, added: "Clearance 90% Off", originalPrice: "$3.85", clearancePrice: "$0.38" },
-            { store: "DG", name: "Energizer MAX AA Batteries 4-Pack", upc: "039800011329", accuracy: 90, added: "Price Drop", originalPrice: "$5.50", clearancePrice: "$1.25" },
+            { store: "DG", name: "Ghirardelli Chocolate Hearts 2.7oz", upc: "034759012234", accuracy: 98, added: "Tuesday Penny", originalPrice: 4.25, clearancePrice: 0.01, isPenny: true },
+            { store: "DG", name: "Colgate MaxFresh Clean Mint Paste 6oz", upc: "035000456128", accuracy: 95, added: "Tuesday Penny", originalPrice: 3.50, clearancePrice: 0.01, isPenny: true },
+            { store: "DG", name: "Gain Liquid Detergent Original 46oz", upc: "037000758312", accuracy: 88, added: "Clearance 90% Off", originalPrice: 6.50, clearancePrice: 0.65, isPenny: false },
+            { store: "DG", name: "Comfort Bay Standard Bed Pillow", upc: "074523001429", accuracy: 92, added: "Tuesday Penny", originalPrice: 5.00, clearancePrice: 0.01, isPenny: true },
+            { store: "DG", name: "Doritos Nacho Cheese Party Size 15oz", upc: "028400313982", accuracy: 75, added: "Inventory Reset", originalPrice: 5.99, clearancePrice: 1.49, isPenny: false },
+            { store: "DG", name: "Goldfish Cheddar Crackers Baked 6.6oz", upc: "014100078231", accuracy: 94, added: "Tuesday Penny", originalPrice: 2.75, clearancePrice: 0.01, isPenny: true },
+            { store: "DG", name: "Hefty Slider Storage Bags Quart 20ct", upc: "013700021543", accuracy: 82, added: "Clearance 90% Off", originalPrice: 3.85, clearancePrice: 0.38, isPenny: false },
+            { store: "DG", name: "Energizer MAX AA Batteries 4-Pack", upc: "039800011329", accuracy: 90, added: "Price Drop", originalPrice: 5.50, clearancePrice: 1.25, isPenny: false },
 
             // Home Depot (HD) Items
-            { store: "HD", name: "HDX 5-Gallon Heavy Duty Mixing Bucket", upc: "044315893214", accuracy: 85, added: "Active Markdown", originalPrice: "$4.48", clearancePrice: "$1.03" },
-            { store: "HD", name: "Milwaukee SHOCKWAVE Driver Bit Set (45-Piece)", upc: "045242534125", accuracy: 91, added: "Yellow Tag Clearance", originalPrice: "$29.97", clearancePrice: "$7.03" },
-            { store: "HD", name: "Ryobi 18V ONE+ Cordless Hand Vacuum", upc: "033287175234", accuracy: 78, added: "Display Markdown", originalPrice: "$34.97", clearancePrice: "$9.03" },
-            { store: "HD", name: "Defiant 9-LED Flashlight Multipack (3ct)", upc: "084214811029", accuracy: 89, added: "Yellow Tag Clearance", originalPrice: "$9.97", clearancePrice: "$2.53" },
-            { store: "HD", name: "Husky 16oz Fiberglass Claw Hammer", upc: "037103284152", accuracy: 96, added: "Active Markdown", originalPrice: "$12.97", clearancePrice: "$3.03" },
-            { store: "HD", name: "Gorilla Super Glue Gel 15g", upc: "052427004031", accuracy: 93, added: "Price Match", originalPrice: "$6.47", clearancePrice: "$1.50" },
+            { store: "HD", name: "HDX 5-Gallon Heavy Duty Mixing Bucket", upc: "044315893214", accuracy: 85, added: "Active Markdown", originalPrice: 4.48, clearancePrice: 1.03, isPenny: false },
+            { store: "HD", name: "Milwaukee SHOCKWAVE Driver Bit Set (45-Piece)", upc: "045242534125", accuracy: 91, added: "Yellow Tag Clearance", originalPrice: 29.97, clearancePrice: 7.03, isPenny: false },
+            { store: "HD", name: "Ryobi 18V ONE+ Cordless Hand Vacuum", upc: "033287175234", accuracy: 78, added: "Display Markdown", originalPrice: 34.97, clearancePrice: 9.03, isPenny: false },
+            { store: "HD", name: "Defiant 9-LED Flashlight Multipack (3ct)", upc: "084214811029", accuracy: 89, added: "Yellow Tag Clearance", originalPrice: 9.97, clearancePrice: 2.53, isPenny: false },
+            { store: "HD", name: "Husky 16oz Fiberglass Claw Hammer", upc: "037103284152", accuracy: 96, added: "Active Markdown", originalPrice: 12.97, clearancePrice: 3.03, isPenny: false },
+            { store: "HD", name: "Gorilla Super Glue Gel 15g", upc: "052427004031", accuracy: 93, added: "Price Match", originalPrice: 6.47, clearancePrice: 1.50, isPenny: false },
 
             // Dollar Tree (DT) Items
-            { store: "DT", name: "Assorted Licensed Character Socks", upc: "072554110943", accuracy: 70, added: "System Reset", originalPrice: "$1.25", clearancePrice: "$0.25" },
-            { store: "DT", name: "Crayola Classic Crayons 24ct", upc: "071662000246", accuracy: 97, added: "Overstock Drop", originalPrice: "$1.25", clearancePrice: "$0.50" },
-            { store: "DT", name: "Reynolds Wrap Aluminum Foil 25 sq ft", upc: "010900000105", accuracy: 85, added: "System Reset", originalPrice: "$1.25", clearancePrice: "$0.25" },
-            { store: "DT", name: "Palmolive Essential Clean Liquid 8oz", upc: "035000014106", accuracy: 91, added: "Warehouse Clear", originalPrice: "$1.25", clearancePrice: "$0.25" }
+            { store: "DT", name: "Assorted Licensed Character Socks", upc: "072554110943", accuracy: 70, added: "System Reset", originalPrice: 1.25, clearancePrice: 0.25, isPenny: false },
+            { store: "DT", name: "Crayola Classic Crayons 24ct", upc: "071662000246", accuracy: 97, added: "Overstock Drop", originalPrice: 1.25, clearancePrice: 0.50, isPenny: false },
+            { store: "DT", name: "Reynolds Wrap Aluminum Foil 25 sq ft", upc: "010900000105", accuracy: 85, added: "System Reset", originalPrice: 1.25, clearancePrice: 0.25, isPenny: false },
+            { store: "DT", name: "Palmolive Essential Clean Liquid 8oz", upc: "035000014106", accuracy: 91, added: "Warehouse Clear", originalPrice: 1.25, clearancePrice: 0.25, isPenny: false }
         ];
+
+        let currentActiveBrand = "";
+        let currentFilter = "all"; // all, penny, markdown
+        let currentSort = "discount"; // discount, price
 
         async function searchStoresGlobally() {
             const zip = document.getElementById("zipInput").value.trim();
@@ -88,6 +110,7 @@
             const searchBtn = document.getElementById("searchBtn");
             
             document.getElementById("activeStoreBanner").classList.add("hidden");
+            document.getElementById("controlsSection").classList.add("hidden");
             document.getElementById("dealSection").classList.add("hidden");
 
             if(!zip || zip.length < 5) {
@@ -195,44 +218,103 @@
         }
 
         function selectExactStore(brand, storeName, storeAddress) {
+            currentActiveBrand = brand;
             document.getElementById("activeStoreDetails").innerText = `${storeName} — ${storeAddress}`;
             document.getElementById("activeStoreBanner").classList.remove("hidden");
+            document.getElementById("controlsSection").classList.remove("hidden");
+            
+            renderDeals();
+        }
 
+        function setFilter(filterType) {
+            currentFilter = filterType;
+            ['all', 'penny', 'markdown'].forEach(f => {
+                const btn = document.getElementById(`filter-${f}`);
+                if(f === filterType) {
+                    btn.className = "bg-emerald-500 text-slate-950 font-bold text-xs py-2 rounded-xl transition active:scale-95";
+                } else {
+                    btn.className = "bg-slate-950 hover:bg-slate-850 text-slate-300 font-semibold text-xs py-2 rounded-xl transition active:scale-95";
+                }
+            });
+            renderDeals();
+        }
+
+        function setSort(sortType) {
+            currentSort = sortType;
+            const discBtn = document.getElementById('sort-discount');
+            const priceBtn = document.getElementById('sort-price');
+            
+            if(sortType === 'discount') {
+                discBtn.className = "bg-slate-950 hover:bg-slate-850 border border-emerald-500/30 text-emerald-400 font-bold text-xs py-2 rounded-xl flex items-center justify-center gap-1 transition active:scale-95";
+                priceBtn.className = "bg-slate-950 hover:bg-slate-850 border border-slate-800 text-slate-400 font-semibold text-xs py-2 rounded-xl flex items-center justify-center gap-1 transition active:scale-95";
+            } else {
+                discBtn.className = "bg-slate-950 hover:bg-slate-850 border border-slate-800 text-slate-400 font-semibold text-xs py-2 rounded-xl flex items-center justify-center gap-1 transition active:scale-95";
+                priceBtn.className = "bg-slate-950 hover:bg-slate-850 border border-emerald-500/30 text-emerald-400 font-bold text-xs py-2 rounded-xl flex items-center justify-center gap-1 transition active:scale-95";
+            }
+            renderDeals();
+        }
+
+        function renderDeals() {
             const dealSection = document.getElementById("dealSection");
             const pennyListContainer = document.getElementById("pennyList");
             dealSection.classList.remove("hidden");
 
-            const storeSpecificDeals = loadedCloudItems.filter(item => item.store === brand);
+            // Filter by selected retail system framework
+            let matches = loadedCloudItems.filter(item => item.store === currentActiveBrand);
 
-            if(storeSpecificDeals.length === 0) {
+            // Apply filter buttons logic
+            if (currentFilter === 'penny') {
+                matches = matches.filter(item => item.isPenny);
+            } else if (currentFilter === 'markdown') {
+                matches = matches.filter(item => !item.isPenny);
+            }
+
+            // Apply dynamic sort calculations
+            if (currentSort === 'discount') {
+                // Calculation: ((Original - Clearance) / Original) to get mathematically highest saving weight
+                matches.sort((a, b) => {
+                    const discountA = (a.originalPrice - a.clearancePrice) / a.originalPrice;
+                    const discountB = (b.originalPrice - b.clearancePrice) / b.originalPrice;
+                    return discountB - discountA;
+                });
+            } else if (currentSort === 'price') {
+                // Low to high absolute face value price
+                matches.sort((a, b) => a.clearancePrice - b.clearancePrice);
+            }
+
+            if(matches.length === 0) {
                 pennyListContainer.innerHTML = `
                     <div class="bg-slate-950 border border-slate-850 rounded-2xl p-6 text-center text-slate-500 text-sm">
-                        No active matching clearance scans for this brand framework today.
+                        No active deals matching your chosen filters in this catalog today.
                     </div>
                 `;
             } else {
-                pennyListContainer.innerHTML = storeSpecificDeals.map(item => `
-                    <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-md">
-                        <div>
-                            <div class="flex justify-between items-center mb-1">
-                                <span class="text-xs font-mono font-bold text-emerald-400">${item.added}</span>
-                                <span class="text-xs text-slate-500 font-mono">${item.accuracy}% Scan Match</span>
+                pennyListContainer.innerHTML = matches.map(item => {
+                    const percentageOff = Math.round(((item.originalPrice - item.clearancePrice) / item.originalPrice) * 100);
+                    
+                    return `
+                        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-md">
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-xs font-mono font-bold text-emerald-400">${item.added}</span>
+                                    <span class="text-xs bg-emerald-500/10 text-emerald-400 font-bold px-2 py-0.5 rounded font-mono">${percentageOff}% OFF</span>
+                                </div>
+                                <h4 class="font-bold text-slate-100 text-base leading-snug mb-2">${item.name}</h4>
+                                
+                                <div class="flex items-baseline gap-2 mb-1">
+                                    <span class="text-xs text-slate-400 line-through font-mono">Reg: $${item.originalPrice.toFixed(2)}</span>
+                                    <span class="text-lg font-black text-emerald-400 font-mono">Now: $${item.clearancePrice.toFixed(2)}</span>
+                                </div>
                             </div>
-                            <h4 class="font-bold text-slate-100 text-base leading-snug mb-2">${item.name}</h4>
-                            
-                            <div class="flex items-baseline gap-2 mb-1">
-                                <span class="text-xs text-slate-400 line-through font-mono">Reg: ${item.originalPrice}</span>
-                                <span class="text-lg font-black text-emerald-400 font-mono">Now: ${item.clearancePrice}</span>
+                            <div class="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl p-2 justify-between">
+                                <span class="font-mono text-xs text-slate-300 tracking-wider">${item.upc}</span>
+                                <button onclick="copyUPC('${item.upc}', this)" class="bg-slate-800 text-emerald-400 text-xs px-3 py-1.5 font-bold rounded-lg flex items-center gap-1">
+                                    <i class="fa-regular fa-copy"></i> <span>Copy</span>
+                                </button>
                             </div>
                         </div>
-                        <div class="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl p-2 justify-between">
-                            <span class="font-mono text-xs text-slate-300 tracking-wider">${item.upc}</span>
-                            <button onclick="copyUPC('${item.upc}', this)" class="bg-slate-800 text-emerald-400 text-xs px-3 py-1.5 font-bold rounded-lg flex items-center gap-1">
-                                <i class="fa-regular fa-copy"></i> <span>Copy</span>
-                            </button>
-                        </div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             }
         }
 
