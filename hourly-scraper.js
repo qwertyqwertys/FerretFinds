@@ -1,0 +1,78 @@
+const axios = require('axios');
+const cheerio = require('cheerio');
+const fs = require('fs');
+
+// 1. CONFIGURATION MATRIX: Map out your favorite source sites
+const SOURCE_SITES = [
+    {
+        name: "The Freebie Guy DG",
+        url: "https://thefreebieguy.com/dollar-general-penny-list-for-june-23-2026/",
+        selectors: {
+            itemRow: ".entry-content p", // Where text rows usually sit
+            brand: "DG"
+        }
+    },
+    {
+        name: "The Freebie Guy DT",
+        url: "https://thefreebieguy.com/dollar-tree-penny-items-guide/",
+        selectors: {
+            itemRow: ".entry-content p", // Fixed to parse paragraph elements properly
+            brand: "DT"
+        }
+    }
+];
+
+// Common browser headers to bypass basic site filters
+const REQUEST_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+};
+
+async function runMasterScraper() {
+    let masterCatalog = [];
+
+    console.log("🚀 Starting Multi-Site Scraping Run...");
+
+    for (const site of SOURCE_SITES) {
+        try {
+            console.log(`📡 Fetching items from: ${site.name}...`);
+            const { data } = await axios.get(site.url, { headers: REQUEST_HEADERS });
+            const $ = cheerio.load(data);
+            
+            // Look for the specific elements mapped to this site
+            $(site.selectors.itemRow).each((index, element) => {
+                const rawText = $(element).text().trim();
+
+                // Simple parser logic: look for text strings that contain numbers (like UPCs or SKUs)
+                if (rawText.length > 10 && /\d+/.test(rawText)) {
+                    
+                    // Basic text cleaning rules to structure the data
+                    const cleanName = rawText.replace(/upc|sku|penny/gi, '').replace(/[:\-\d]/g, '').trim();
+                    const extractedNumbers = rawText.match(/\d{8,12}/g); // Finds 8-digit SKUs or 12-digit UPCs
+
+                    if (extractedNumbers) {
+                        masterCatalog.push({
+                            store: site.brand,
+                            name: cleanName || "Clearance General Merchandise",
+                            upc: extractedNumbers[0] || "000000000000",
+                            sku: extractedNumbers[0].length === 8 ? extractedNumbers[0] : "",
+                            added: "Automated Feed Sync",
+                            originalPrice: 3.00, // Placeholder metrics
+                            clearancePrice: 0.01,
+                            isPenny: true,
+                            dept: "Scraped Deal"
+                        });
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error(`❌ Failed parsing ${site.name}:`, error.message);
+        }
+    }
+
+    // 2. EXPORT THE MASTER FEED: Overwrites your local sheet dynamically
+    fs.writeFileSync('./live-deals.json', JSON.stringify(masterCatalog, null, 2));
+    console.log(`✅ Success! Saved ${masterCatalog.length} total items into live-deals.json`);
+}
+
+runMasterScraper();
