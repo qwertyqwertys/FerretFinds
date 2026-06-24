@@ -2,7 +2,7 @@
   "name": "penny-scraper",
   "version": "1.0.0",
   "description": "Automated deal tracker",
-  "main": "your-scraper-file.js",
+  "main": "hourly-scraper.js",
   "dependencies": {
     "axios": "^1.6.0",
     "cheerio": "^1.0.0-rc.12"
