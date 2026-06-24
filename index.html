@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FerretFinds</title>
+    <title>Capybara Clearance Tracker</title>
     <!-- Tailwind CSS for smooth design blocks -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <!-- FontAwesome for icons -->
@@ -20,7 +20,7 @@
             <div class="flex items-center gap-2.5">
                 <span class="text-3xl">🦫</span>
                 <div>
-                    <h1 class="text-base font-black tracking-tight text-white">FerretFinds</h1>
+                    <h1 class="text-base font-black tracking-tight text-white">Capy Deals</h1>
                     <p class="text-xxs text-slate-400 font-medium">Automated Penny Hunter</p>
                 </div>
             </div>
@@ -72,12 +72,12 @@
                 <span id="itemCount" class="text-xxs bg-slate-900 text-slate-400 px-2 py-0.5 rounded-md font-mono font-bold border border-slate-800">0 Items Loaded</span>
             </div>
             
-            <!-- LIVE SEARCH AND BARCODE SCANNER CAPTURE FIELD -->
+            <!-- LIVE SEARCH, SKU, AND BARCODE SCANNER CAPTURE FIELD -->
             <div class="relative">
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
                     <i class="fa-solid fa-magnifying-glass text-xs"></i>
                 </span>
-                <input type="text" id="dealSearchInput" onkeyup="filterLiveCards()" placeholder="Search items or scan UPC barcode..." 
+                <input type="text" id="dealSearchInput" onkeyup="filterLiveCards()" placeholder="Search names, UPC codes, or SKU numbers..." 
                     class="w-full bg-slate-950 border border-slate-850 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 text-white placeholder-slate-500 transition font-sans">
             </div>
 
@@ -93,7 +93,7 @@
 
     <!-- FOOTER SIGNATURE -->
     <footer class="text-center pt-4 border-t border-slate-900">
-        <p class="text-xxs text-slate-600 font-mono tracking-wide">&copy; 2026 FERRETFINDS &bull; DEALS REFRESHED DAILY</p>
+        <p class="text-xxs text-slate-600 font-mono tracking-wide">&copy; 2026 CAPYBARA SCIENCE LABS &bull; DEALS REFRESHED DAILY</p>
     </footer>
 
     <!-- INTERFACE DRIVER LOGIC -->
@@ -169,12 +169,12 @@
                 loadedCloudItems = await response.json();
             } catch (error) {
                 console.log("Mocking sample catalog since live file path isn't hosted yet");
-                // Fallback rich sample catalog so your app views perfectly right out of the box
+                // Fallback rich sample catalog with matching mock SKU codes included right out of the box
                 loadedCloudItems = [
-                    {"store": "DG", "name": "Ghirardelli Chocolate Hearts Valentine Bag", "upc": "747599436239", "added": "Tuesday Penny", "originalPrice": 4.50, "clearancePrice": 0.01, "isPenny": true},
-                    {"store": "DG", "name": "Gain Liquid Laundry Detergent Original 46oz", "upc": "037000761421", "added": "Markdown Drop", "originalPrice": 7.50, "clearancePrice": 2.25, "isPenny": false},
-                    {"store": "DG", "name": "Colgate Optic White Toothpaste 4.2oz", "upc": "035000456123", "added": "Tuesday Penny", "originalPrice": 3.99, "clearancePrice": 0.01, "isPenny": true},
-                    {"store": "DT", "name": "Haribo Goldbears Share Size Bag 8oz", "upc": "042234001211", "added": "Markdown Drop", "originalPrice": 1.25, "clearancePrice": 0.25, "isPenny": false}
+                    {"store": "DG", "name": "Ghirardelli Chocolate Hearts Valentine Bag", "upc": "747599436239", "sku": "32014588", "added": "Tuesday Penny", "originalPrice": 4.50, "clearancePrice": 0.01, "isPenny": true},
+                    {"store": "DG", "name": "Gain Liquid Laundry Detergent Original 46oz", "upc": "037000761421", "sku": "11405973", "added": "Markdown Drop", "originalPrice": 7.50, "clearancePrice": 2.25, "isPenny": false},
+                    {"store": "DG", "name": "Colgate Optic White Toothpaste 4.2oz", "upc": "035000456123", "sku": "95420136", "added": "Tuesday Penny", "originalPrice": 3.99, "clearancePrice": 0.01, "isPenny": true},
+                    {"store": "DT", "name": "Haribo Goldbears Share Size Bag 8oz", "upc": "042234001211", "sku": "54810294", "added": "Markdown Drop", "originalPrice": 1.25, "clearancePrice": 0.25, "isPenny": false}
                 ];
             }
 
@@ -217,6 +217,8 @@
             // Generate HTML structures inside list target container
             pennyListContainer.innerHTML = matches.map(item => {
                 const percentageOff = Math.round(((item.originalPrice - item.clearancePrice) / item.originalPrice) * 100);
+                // Fallback text check if an item scraped from the web happens to have a missing SKU data field
+                const displaySku = item.sku ? item.sku : "N/A";
                 
                 return `
                     <div class="deal-card bg-slate-950 border border-slate-850 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-md transition duration-150">
@@ -232,11 +234,27 @@
                                 <span class="text-base font-black ${item.isPenny ? 'text-amber-400' : 'text-emerald-400'} font-mono">Now: $${item.clearancePrice.toFixed(2)}</span>
                             </div>
                         </div>
-                        <div class="flex items-center gap-2 bg-slate-900 border border-slate-850 rounded-xl p-2 justify-between">
-                            <span class="deal-upc font-mono text-xs text-slate-300 tracking-wider"><i class="fa-solid fa-barcode mr-1.5 text-slate-500"></i>${item.upc}</span>
-                            <button onclick="copyUPC('${item.upc}', this)" class="bg-slate-800 hover:bg-slate-750 text-emerald-400 text-xs px-3 py-1.5 font-bold rounded-lg flex items-center gap-1 transition">
-                                <i class="fa-regular fa-copy"></i> <span>Copy</span>
-                            </button>
+
+                        <!-- BARCODE AND SKU DATA STORAGE BOX -->
+                        <div class="space-y-1.5 bg-slate-900 border border-slate-850 rounded-xl p-2.5">
+                            <!-- UPC Row -->
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="deal-upc font-mono text-xs text-slate-300 tracking-wider">
+                                    <span class="text-slate-500 text-xxs font-sans uppercase font-bold mr-1">UPC:</span>${item.upc}
+                                </span>
+                                <button onclick="copyDataText('${item.upc}', this)" class="bg-slate-800 hover:bg-slate-750 text-emerald-400 text-xxs px-2.5 py-1 font-bold rounded flex items-center gap-1 transition">
+                                    <i class="fa-regular fa-copy"></i> <span>Copy</span>
+                                </button>
+                            </div>
+                            <!-- SKU Row -->
+                            <div class="flex items-center justify-between gap-2 pt-1.5 border-t border-slate-850">
+                                <span class="deal-sku font-mono text-xs text-slate-300 tracking-wider">
+                                    <span class="text-slate-500 text-xxs font-sans uppercase font-bold mr-1">SKU:</span>${displaySku}
+                                </span>
+                                <button onclick="copyDataText('${displaySku}', this)" class="bg-slate-800 hover:bg-slate-750 text-emerald-400 text-xxs px-2.5 py-1 font-bold rounded flex items-center gap-1 transition">
+                                    <i class="fa-regular fa-copy"></i> <span>Copy</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -246,7 +264,7 @@
             filterLiveCards();
         }
 
-        // 4. INSTANT SEARCH AND UPC LIVE FILTER KEYWORD CAPTURE
+        // 4. INSTANT SEARCH AND UPC/SKU LIVE FILTER KEYWORD CAPTURE
         function filterLiveCards() {
             const query = document.getElementById('dealSearchInput').value.toLowerCase().trim();
             const cards = document.querySelectorAll('.deal-card');
@@ -254,9 +272,10 @@
             cards.forEach(card => {
                 const nameText = card.querySelector('.deal-name').innerText.toLowerCase();
                 const upcText = card.querySelector('.deal-upc').innerText.toLowerCase();
+                const skuText = card.querySelector('.deal-sku').innerText.toLowerCase();
 
-                // Keep card open if string parameters find a match inside name or barcode text
-                if (nameText.includes(query) || upcText.includes(query)) {
+                // Keep card open if search parameters match item name, UPC code, OR SKU numbers
+                if (nameText.includes(query) || upcText.includes(query) || skuText.includes(query)) {
                     card.style.display = "";
                 } else {
                     card.style.display = "none";
@@ -264,8 +283,9 @@
             });
         }
 
-        // 5. COPY BARCODE HELPER FUNCTION
-        function copyUPC(textValue, buttonElement) {
+        // 5. COPY HELPER FUNCTION FOR BOTH UPC & SKU TEXT VALUES
+        function copyDataText(textValue, buttonElement) {
+            if (textValue === "N/A") return;
             navigator.clipboard.writeText(textValue);
             
             const originalStructure = buttonElement.innerHTML;
