@@ -170,7 +170,7 @@
             }, 800);
         }
 
-        // 3. RENDER CARDS DYNAMICALLY WITH SAFE EMBEDDED GOOGLE SHOPPING LINKS
+        // 3. RENDER CARDS DYNAMICALLY WITH CLEAN FIREWALL-SAFE LINKS
         function renderDeals() {
             const pennyListContainer = document.getElementById("pennyList");
             const counterDisplay = document.getElementById("itemCount");
@@ -198,11 +198,12 @@
                 const percentageOff = Math.round(((item.originalPrice - item.clearancePrice) / item.originalPrice) * 100);
                 const displaySku = item.sku ? item.sku : "N/A";
                 
-                // Construct a custom target search query to avoid corporate firewalls blocking direct linkages
-                let storeQueryText = item.store === "DG" ? "Dollar General" : "Dollar Tree";
+                // Build search terms using both product name and barcode numbers to guarantee top match placement
+                let targetStoreName = item.store === "DG" ? "site:dollargeneral.com" : "site:dollartree.com";
+                let fullQuery = `${targetStoreName} ${item.name} ${item.upc}`;
                 
-                // Targets Google Shopping with exact store keyword scope + universal barcode identifier
-                let targetUrl = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(storeQueryText + ' ' + item.upc)}`;
+                // Generates an unblockable, clean external web lookup url sequence
+                let targetUrl = `https://www.bing.com/search?q=${encodeURIComponent(fullQuery)}`;
                 
                 return `
                     <div class="deal-card bg-slate-950 border border-slate-850 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-md transition duration-150">
