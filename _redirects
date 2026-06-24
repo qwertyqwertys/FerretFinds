@@ -1,1 +1,1 @@
-/live-deals.json  /live-deals.json  200
+/data/* /data/:splat  200
