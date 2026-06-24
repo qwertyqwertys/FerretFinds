@@ -170,7 +170,7 @@
             }, 800);
         }
 
-        // 3. RENDER CARDS DYNAMICALLY WITH CLEAN FIREWALL-SAFE LINKS
+        // 3. RENDER CARDS DYNAMICALLY WITH CLEAN DIRECT RETAIL LINKS
         function renderDeals() {
             const pennyListContainer = document.getElementById("pennyList");
             const counterDisplay = document.getElementById("itemCount");
@@ -198,12 +198,15 @@
                 const percentageOff = Math.round(((item.originalPrice - item.clearancePrice) / item.originalPrice) * 100);
                 const displaySku = item.sku ? item.sku : "N/A";
                 
-                // Build search terms using both product name and barcode numbers to guarantee top match placement
-                let targetStoreName = item.store === "DG" ? "site:dollargeneral.com" : "site:dollartree.com";
-                let fullQuery = `${targetStoreName} ${item.name} ${item.upc}`;
-                
-                // Generates an unblockable, clean external web lookup url sequence
-                let targetUrl = `https://www.bing.com/search?q=${encodeURIComponent(fullQuery)}`;
+                // --- DIRECT PAGE URL STRINGS ---
+                let targetUrl = "#";
+                if (item.store === "DG") {
+                    // Dollar General maps product inventory parameters cleanly by SKU string
+                    targetUrl = `https://www.dollargeneral.com/p/${item.sku}`;
+                } else if (item.store === "DT") {
+                    // Dollar Tree targets product configurations using their direct searching gateway string
+                    targetUrl = `https://www.dollartree.com/search/search.jsp?Ntt=${item.upc}`;
+                }
                 
                 return `
                     <div class="deal-card bg-slate-950 border border-slate-850 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-md transition duration-150">
@@ -216,7 +219,7 @@
                             <h4 class="deal-name font-bold text-slate-100 text-sm leading-snug mb-2">
                                 <a href="${targetUrl}" target="_blank" rel="noopener noreferrer" class="hover:text-emerald-400 hover:underline transition duration-100 decoration-emerald-400/50 flex items-center gap-1 inline-flex">
                                     <span>${item.name}</span>
-                                    <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-500 opacity-60"></i>
+                                    <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-500 opacity-60 ml-1"></i>
                                 </a>
                             </h4>
                             
