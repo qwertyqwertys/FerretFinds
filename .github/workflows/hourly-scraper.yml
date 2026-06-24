@@ -1,70 +1,78 @@
-import requests
-from bs4 import BeautifulSoup
-import json
-import re
+const axios = require('axios');
+const cheerio = require('cheerio');
+const fs = require('fs');
 
-def scrape_freebie_guy_master_list():
-    # Targeted Master List URL
-    url = "https://thefreebieguy.com/dollar-general-penny-list-for-june-23-2026/"
-    
-    # A standard User-Agent prevents the website from immediately blocking the request
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+// 1. CONFIGURATION MATRIX: Map out your favorite source sites
+const SOURCE_SITES = [
+    {
+        name: "The Freebie Guy DG",
+        url: "https://thefreebieguy.com/dollar-general-penny-list-for-june-23-2026/",
+        selectors: {
+            itemRow: ".entry-content p", // Where text rows usually sit
+            brand: "DG"
+        }
+    },
+    {
+        name: "The Freebie Guy DT",
+        url: "https://thefreebieguy.com/dollar-tree-penny-items-guide/",
+        selectors: {
+            itemRow: ".wp-block-post-content li", // If they use bulleted lists
+            brand: "DT"
+        }
     }
-    
-    print(f"Connecting to live feed: {url}...")
-    response = requests.get(url, headers=headers)
-    
-    if response.status_code != 200:
-        print(f"Error: Server responded with status code {response.status_code}")
-        return []
+];
 
-    soup = BeautifulSoup(response.text, 'html.parser')
-    extracted_deals = []
+// Common browser headers to bypass basic site filters
+const REQUEST_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+};
 
-    # The Freebie Guy lists individual penny items inside paragraph tags and bullet points
-    for item_element in soup.find_all(['p', 'li']):
-        line_text = item_element.get_text().strip()
-        
-        # Look for a pattern that contains a 11 to 13 digit barcode/UPC number
-        upc_match = re.search(r'\b\d{11,13}\b', line_text)
-        
-        if upc_match:
-            detected_upc = upc_match.group(0)
+async function runMasterScraper() {
+    let masterCatalog = [];
+
+    console.log("🚀 Starting Multi-Site Scraping Run...");
+
+    for (const site of SOURCE_SITES) {
+        try {
+            console.log(`📡 Fetching items from: ${site.name}...`);
+            const { data } = await axios.get(site.url, { headers: REQUEST_HEADERS });
+            const $ = cheerio.load(data);
             
-            # Clean up the product title by stripping away the UPC code from the text line
-            # This isolates strings like "Ghirardelli Chocolate Hearts - UPC:" down to just the name
-            clean_name = line_text.split(detected_upc)[0]
-            clean_name = clean_name.replace("UPC", "").replace(":", "").strip(" -–—")
-            
-            # If the item title ends up blank or too short, use a fallback placeholder
-            if len(clean_name) < 3:
-                clean_name = "Premium Clearance Item"
+            // Look for the specific elements mapped to this site
+            $(site.selectors.itemRow).each((index, element) => {
+                const rawText = $(element).text().trim();
 
-            # Automatically extract an 8-digit store SKU out of the universal barcode text sequence
-            generated_sku = detected_upc[-8:] if len(detected_upc) >= 8 else detected_upc
+                // Simple parser logic: look for text strings that contain numbers (like UPCs or SKUs)
+                if (rawText.length > 10 && /\d+/.test(rawText)) {
+                    
+                    // Basic text cleaning rules to structure the data
+                    const cleanName = rawText.replace(/upc|sku|penny/gi, '').replace(/[:\-\d]/g, '').trim();
+                    const extractedNumbers = rawText.match(/\d{8,12}/g); // Finds 8-digit SKUs or 12-digit UPCs
 
-            # Check for duplicates so we don't spam the list with the exact same barcode twice
-            if not any(d['upc'] == detected_upc for d in extracted_deals):
-                extracted_deals.append({
-                    "store": "DG",
-                    "name": clean_name,
-                    "upc": detected_upc,
-                    "sku": generated_sku, # New SKU data field injected here
-                    "added": "Tuesday Penny Drop",
-                    "originalPrice": 4.50, # Baseline placeholder for layout matching
-                    "clearancePrice": 0.01,
-                    "isPenny": True
-                })
+                    if (extractedNumbers) {
+                        masterCatalog.push({
+                            store: site.brand,
+                            name: cleanName || "Clearance General Merchandise",
+                            upc: extractedNumbers[0] || "000000000000",
+                            sku: extractedNumbers[0].length === 8 ? extractedNumbers[0] : "",
+                            added: "Automated Feed Sync",
+                            originalPrice: 3.00, // Placeholder metrics
+                            clearancePrice: 0.01,
+                            isPenny: true,
+                            dept: "Scraped Deal"
+                        });
+                    }
+                }
+            });
 
-    print(f"Successfully filtered and pulled {len(extracted_deals)} unique items.")
-    return extracted_deals
+        } catch (error) {
+            console.error(`❌ Failed parsing ${site.name}:`, error.message);
+        }
+    }
 
-# This block saves the freshly processed data directly to your dynamic file
-if __name__ == "__main__":
-    live_items = scrape_freebie_guy_master_list()
-    
-    if live_items:
-        with open("live-deals.json", "w") as file:
-            json.dump(live_items, file, indent=4)
-        print("Your 'live-deals.json' file has been updated successfully!")
+    // 2. EXPORT THE MASTER FEED: Overwrites your local sheet dynamically
+    fs.writeFileSync('./live-deals.json', JSON.stringify(masterCatalog, null, 2));
+    console.log(`✅ Success! Saved ${masterCatalog.length} total items into live-deals.json`);
+}
+
+runMasterScraper();
