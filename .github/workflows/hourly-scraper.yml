@@ -1,33 +1,66 @@
-name: Hourly Deal Refresher
+import requests
+from bs4 import BeautifulSoup
+import json
+import re
 
-on:
-  schedule:
-    - cron: '0 * * * *'
-  workflow_dispatch: # Allows you to also trigger it manually with a button click
+def scrape_freebie_guy_master_list():
+    # Targeted Master List URL
+    url = "https://thefreebieguy.com/dollar-general-penny-shopping-master-list/"
+    
+    # A standard User-Agent prevents the website from immediately blocking the request
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    
+    print(f"Connecting to live feed: {url}...")
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code != 200:
+        print(f"Error: Server responded with status code {response.status_code}")
+        return []
 
-jobs:
-  refresh-data:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout Repository Code
-      uses: actions/checkout@v4
+    soup = BeautifulSoup(response.text, 'html.parser')
+    extracted_deals = []
 
-    - name: Set up Python Environment
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
+    # The Freebie Guy lists individual penny items inside paragraph tags and bullet points
+    for item_element in soup.find_all(['p', 'li']):
+        line_text = item_element.get_text().strip()
+        
+        # Look for a pattern that contains a 11 to 13 digit barcode/UPC number
+        upc_match = re.search(r'\b\d{11,13}\b', line_text)
+        
+        if upc_match:
+            detected_upc = upc_match.group(0)
+            
+            # Clean up the product title by stripping away the UPC code from the text line
+            # This isolates strings like "Ghirardelli Chocolate Hearts - UPC:" down to just the name
+            clean_name = line_text.split(detected_upc)[0]
+            clean_name = clean_name.replace("UPC", "").replace(":", "").strip(" -–—")
+            
+            # If the item title ends up blank or too short, use a fallback placeholder
+            if len(clean_name) < 3:
+                clean_name = "Premium Clearance Item"
 
-    - name: Install Scraping Dependencies
-      run: |
-        pip install requests beautifulsoup4
+            # Check for duplicates so we don't spam the list with the exact same barcode twice
+            if not any(d['upc'] == detected_upc for d in extracted_deals):
+                extracted_deals.append({
+                    "store": "DG",
+                    "name": clean_name,
+                    "upc": detected_upc,
+                    "added": "Tuesday Penny Drop",
+                    "originalPrice": 4.50, # Baseline placeholder for layout matching
+                    "clearancePrice": 0.01,
+                    "isPenny": True
+                })
 
-    - name: Run Scraper Script
-      run: python update_deals.py
+    print(f"Successfully filtered and pulled {len(extracted_deals)} unique items.")
+    return extracted_deals
 
-    - name: Commit and Push Updated live-deals.json
-      run: |
-        git config --global user.name "FerretFindsBot"
-        git config --global user.email "bot@ferretfinds.pages.dev"
-        git add live-deals.json
-        git commit -m "Automated hourly inventory refresh" || exit 0
-        git push
+# This block saves the freshly processed data directly to your dynamic file
+if __name__ == "__main__":
+    live_items = scrape_freebie_guy_master_list()
+    
+    if live_items:
+        with open("live-deals.json", "w") as file:
+            json.dump(live_items, file, indent=4)
+        print("Your 'live-deals.json' file has been updated successfully!")
