@@ -1,4 +1,4 @@
-name: Hourly Scraper
+name: Hourly Scraper 
 
 on:
   schedule:
