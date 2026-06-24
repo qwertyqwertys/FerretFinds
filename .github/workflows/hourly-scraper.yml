@@ -16,7 +16,7 @@ const SOURCE_SITES = [
         name: "The Freebie Guy DT",
         url: "https://thefreebieguy.com/dollar-tree-penny-items-guide/",
         selectors: {
-            itemRow: ".wp-block-post-content li", // If they use bulleted lists
+            itemRow: ".entry-content p", // 🔥 FIXED: Changed to parse paragraph elements properly
             brand: "DT"
         }
     }
