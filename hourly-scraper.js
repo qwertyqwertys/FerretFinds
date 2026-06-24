@@ -58,12 +58,12 @@ async function runMasterScraper() {
         }
     }
 
-    // CREATE DATA DIRECTORY
     const dir = './data';
     if (!fs.existsSync(dir)){ fs.mkdirSync(dir); }
 
-    fs.writeFileSync(path.join(dir, 'live-deals.json'), JSON.stringify(masterCatalog, null, 2));
-    console.log(`✅ Success! Saved ${masterCatalog.length} items to data/live-deals.json`);
+    // Saving as .txt to bypass routing
+    fs.writeFileSync(path.join(dir, 'live-deals.txt'), JSON.stringify(masterCatalog, null, 2));
+    console.log(`✅ Success! Saved ${masterCatalog.length} items to data/live-deals.txt`);
 }
 
 runMasterScraper();
