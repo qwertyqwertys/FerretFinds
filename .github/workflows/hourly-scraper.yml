@@ -5,7 +5,7 @@ import re
 
 def scrape_freebie_guy_master_list():
     # Targeted Master List URL
-    url = "https://thefreebieguy.com/dollar-general-penny-shopping-master-list/"
+    url = "https://thefreebieguy.com/dollar-general-penny-list-for-june-23-2026/"
     
     # A standard User-Agent prevents the website from immediately blocking the request
     headers = {
