@@ -18,7 +18,7 @@
     <header class="space-y-4">
         <div class="flex justify-between items-center bg-slate-900/60 border border-slate-850 p-4 rounded-2xl shadow-xl">
             <div class="flex items-center gap-2.5">
-                <span class="text-3xl">🦫</span>
+                <span class="text-3xl">🦦</span>
                 <div>
                     <h1 class="text-base font-black tracking-tight text-white">FerretFinds</h1>
                     <p class="text-xxs text-slate-400 font-medium">Automated Penny Hunter</p>
@@ -92,8 +92,8 @@
     </main>
 
     <!-- FOOTER SIGNATURE -->
-    <footer class="text-center pt-4 border-t border-slate-900">
-        <p class="text-xxs text-slate-600 font-mono tracking-wide">&copy; 2026 FERRETFINDS &bull; DEALS REFRESHED DAILY</p>
+    <footer class="text-center pt-4 border-t border-t-slate-900">
+        <p class="text-xxs text-slate-600 font-mono tracking-wide">&copy; 2026 CAPYBARA SCIENCE LABS &bull; DEALS REFRESHED DAILY</p>
     </footer>
 
     <!-- INTERFACE DRIVER LOGIC -->
@@ -132,7 +132,6 @@
             
             const clockInterval = setInterval(() => {
                 if (totalSecondsLeft <= 0) {
-                    // Reset to 1 hour, trigger a silent database fetch loop background refresh
                     totalSecondsLeft = 3600;
                     fetchLatestDealsFeed();
                 } else {
@@ -142,7 +141,6 @@
                 let minutes = Math.floor(totalSecondsLeft / 60);
                 let seconds = totalSecondsLeft % 60;
 
-                // Standard string formatting with zero padding
                 let cleanMin = minutes < 10 ? "0" + minutes : minutes;
                 let cleanSec = seconds < 10 ? "0" + seconds : seconds;
 
@@ -157,19 +155,16 @@
             const cloudIcon = document.getElementById("syncIcon");
             const textLabel = document.getElementById("syncText");
 
-            // Visually transition badge to "pulling mode"
             spinner.classList.remove("hidden");
             cloudIcon.classList.add("hidden");
             textLabel.innerText = "Pulling Feed...";
             badge.className = "flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-xl";
 
             try {
-                // Pointing to your local live-deals.json file managed by the Python master-list parser
                 const response = await requestsFetchShim("./live-deals.json");
                 loadedCloudItems = await response.json();
             } catch (error) {
                 console.log("Mocking sample catalog since live file path isn't hosted yet");
-                // Fallback rich sample catalog with matching mock SKU codes included right out of the box
                 loadedCloudItems = [
                     {"store": "DG", "name": "Ghirardelli Chocolate Hearts Valentine Bag", "upc": "747599436239", "sku": "32014588", "added": "Tuesday Penny", "originalPrice": 4.50, "clearancePrice": 0.01, "isPenny": true},
                     {"store": "DG", "name": "Gain Liquid Laundry Detergent Original 46oz", "upc": "037000761421", "sku": "11405973", "added": "Markdown Drop", "originalPrice": 7.50, "clearancePrice": 2.25, "isPenny": false},
@@ -178,7 +173,6 @@
                 ];
             }
 
-            // Restore sync badge indicators back to countdown display state
             setTimeout(() => {
                 spinner.classList.add("hidden");
                 cloudIcon.classList.remove("hidden");
@@ -188,15 +182,13 @@
             }, 800);
         }
 
-        // 3. RENDER CARDS DYNAMICALLY
+        // 3. RENDER CARDS DYNAMICALLY WITH INTERACTIVE LINKS
         function renderDeals() {
             const pennyListContainer = document.getElementById("pennyList");
             const counterDisplay = document.getElementById("itemCount");
 
-            // Filter out items by active brand tab (DG vs DT)
             let matches = loadedCloudItems.filter(item => item.store === currentActiveBrand);
 
-            // Filter out items based on filter sub-tabs (All vs Pennies vs Markdowns)
             if (currentFilter === 'penny') {
                 matches = matches.filter(item => item.isPenny);
             } else if (currentFilter === 'markdown') {
@@ -214,11 +206,19 @@
                 return;
             }
 
-            // Generate HTML structures inside list target container
             pennyListContainer.innerHTML = matches.map(item => {
                 const percentageOff = Math.round(((item.originalPrice - item.clearancePrice) / item.originalPrice) * 100);
-                // Fallback text check if an item scraped from the web happens to have a missing SKU data field
                 const displaySku = item.sku ? item.sku : "N/A";
+                
+                // Construct target external search link depending on the store brand code
+                let targetUrl = "#";
+                if (item.store === "DG") {
+                    // Generates direct lookup inside Dollar General database via UPC query
+                    targetUrl = `https://www.dollargeneral.com/search?q=${item.upc}`;
+                } else if (item.store === "DT") {
+                    // Generates fallback search index lookup inside Dollar Tree database via text string query
+                    targetUrl = `https://www.dollartree.com/search/go?w=${encodeURIComponent(item.name)}`;
+                }
                 
                 return `
                     <div class="deal-card bg-slate-950 border border-slate-850 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-md transition duration-150">
@@ -227,7 +227,14 @@
                                 <span class="text-xs font-mono font-bold ${item.isPenny ? 'text-amber-400' : 'text-emerald-400'}">${item.added}</span>
                                 <span class="text-xs ${item.isPenny ? 'bg-amber-500/10 text-amber-400' : 'bg-emerald-500/10 text-emerald-400'} font-bold px-2 py-0.5 rounded font-mono">${percentageOff}% OFF</span>
                             </div>
-                            <h4 class="deal-name font-bold text-slate-100 text-sm leading-snug mb-2">${item.name}</h4>
+                            
+                            <!-- CLICKABLE TITLE ANCHOR LINK BLOCK -->
+                            <h4 class="deal-name font-bold text-slate-100 text-sm leading-snug mb-2">
+                                <a href="${targetUrl}" target="_blank" rel="noopener noreferrer" class="hover:text-emerald-400 hover:underline transition duration-100 decoration-emerald-400/50 flex items-center gap-1 inline-flex">
+                                    <span>${item.name}</span>
+                                    <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-500 opacity-60"></i>
+                                </a>
+                            </h4>
                             
                             <div class="flex items-baseline gap-2 mb-1">
                                 <span class="text-xs text-slate-500 line-through font-mono">Reg: $${item.originalPrice.toFixed(2)}</span>
@@ -235,9 +242,7 @@
                             </div>
                         </div>
 
-                        <!-- BARCODE AND SKU DATA STORAGE BOX -->
                         <div class="space-y-1.5 bg-slate-900 border border-slate-850 rounded-xl p-2.5">
-                            <!-- UPC Row -->
                             <div class="flex items-center justify-between gap-2">
                                 <span class="deal-upc font-mono text-xs text-slate-300 tracking-wider">
                                     <span class="text-slate-500 text-xxs font-sans uppercase font-bold mr-1">UPC:</span>${item.upc}
@@ -246,7 +251,6 @@
                                     <i class="fa-regular fa-copy"></i> <span>Copy</span>
                                 </button>
                             </div>
-                            <!-- SKU Row -->
                             <div class="flex items-center justify-between gap-2 pt-1.5 border-t border-slate-850">
                                 <span class="deal-sku font-mono text-xs text-slate-300 tracking-wider">
                                     <span class="text-slate-500 text-xxs font-sans uppercase font-bold mr-1">SKU:</span>${displaySku}
@@ -260,7 +264,6 @@
                 `;
             }).join('');
 
-            // Automatically check and apply text queries if text is currently typed in search bar
             filterLiveCards();
         }
 
@@ -274,7 +277,6 @@
                 const upcText = card.querySelector('.deal-upc').innerText.toLowerCase();
                 const skuText = card.querySelector('.deal-sku').innerText.toLowerCase();
 
-                // Keep card open if search parameters match item name, UPC code, OR SKU numbers
                 if (nameText.includes(query) || upcText.includes(query) || skuText.includes(query)) {
                     card.style.display = "";
                 } else {
