@@ -9,8 +9,17 @@
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
         body { background-color: #020617; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
-        /* Smooth video frame scaling */
         #qr-reader video { object-fit: cover !important; border-radius: 12px; }
+        
+        /* Premium Glow Effect for True Pennies */
+        .penny-glow {
+            box-shadow: 0 0 12px rgba(251, 191, 36, 0.2);
+            animation: pulse-glow 2s infinite alternate;
+        }
+        @keyframes pulse-glow {
+            0% { border-color: rgba(251, 191, 36, 0.3); }
+            100% { border-color: rgba(251, 191, 36, 0.7); }
+        }
     </style>
 </head>
 <body class="p-4 max-w-lg mx-auto min-h-screen flex flex-col justify-between">
@@ -85,7 +94,7 @@
                     <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
                         <i class="fa-solid fa-magnifying-glass text-xs"></i>
                     </span>
-                    <input type="text" id="dealSearchInput" onkeyup="filterLiveCards()" placeholder="Search names, UPC codes, or departments..." 
+                    <input type="text" id="dealSearchInput" onkeyup="filterLiveCards()" placeholder="Search names, UPC codes, or tags..." 
                         class="w-full bg-slate-950 border border-slate-850 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 text-white placeholder-slate-500 transition font-sans">
                 </div>
                 <button onclick="toggleCameraScanner()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 rounded-xl flex items-center justify-center transition shadow-md shadow-emerald-500/10">
@@ -110,11 +119,8 @@
         let loadedCloudItems = [];
         let currentActiveBrand = 'DG';
         let currentFilter = 'all';
-        let currentSort = 'discount';
-        let totalSecondsLeft = 3600; 
-        
-        // Scan State Tracker
         let html5QrcodeScanner = null;
+        let totalSecondsLeft = 3600; 
 
         window.addEventListener('DOMContentLoaded', () => {
             initializeStoredZipCode();
@@ -122,31 +128,38 @@
             fetchLatestDealsFeed();
         });
 
-        // LIVE SCANNER CONTROLLER SUBSYSTEM
+        // SUCCESS BADGE SYSTEM ENGINE
+        function generatePriceBadge(clearancePrice, percentOff) {
+            if (clearancePrice === 0.01) {
+                return `
+                    <span class="text-[10px] bg-amber-500 text-slate-950 font-black px-2 py-0.5 rounded flex items-center gap-1 uppercase tracking-wider animate-pulse">
+                        <i class="fa-solid fa-star"></i> True Penny
+                    </span>
+                `;
+            } else if (percentOff >= 90) {
+                return `
+                    <span class="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-black px-2 py-0.5 rounded flex items-center gap-1 uppercase tracking-wider">
+                        <i class="fa-solid fa-fire"></i> Steal Deal
+                    </span>
+                `;
+            } else {
+                return `
+                    <span class="text-[10px] bg-sky-500/10 text-sky-400 border border-sky-500/20 font-bold px-2 py-0.5 rounded flex items-center gap-1 uppercase tracking-wider">
+                        <i class="fa-solid fa-tag"></i> Clearance
+                    </span>
+                `;
+            }
+        }
+
         function toggleCameraScanner() {
             const container = document.getElementById("scannerContainer");
-            
             if (container.classList.contains("hidden")) {
                 container.classList.remove("hidden");
-                
-                // Initialize modern parser logic to read basic barcode sequences
                 html5QrcodeScanner = new Html5Qrcode("qr-reader");
-                
-                const config = { 
-                    fps: 15, 
-                    qrbox: { width: 260, height: 140 }, // Wide rectangular box matching row barcodes
-                    aspectRatio: 1.777778 // 16:9 box matrix
-                };
-
-                // Request clean access stream targeting back camera arrays
-                html5QrcodeScanner.start(
-                    { facingMode: "environment" }, 
-                    config, 
-                    onBarcodeSuccess,
-                    onBarcodeFailure
-                ).catch(err => {
-                    console.error("Camera access failed:", err);
-                    alert("Unable to open camera lens. Check site security permissions!");
+                const config = { fps: 15, qrbox: { width: 260, height: 140 }, aspectRatio: 1.777778 };
+                html5QrcodeScanner.start({ facingMode: "environment" }, config, onBarcodeSuccess, onBarcodeFailure)
+                .catch(err => {
+                    alert("Camera access denied.");
                     container.classList.add("hidden");
                 });
             } else {
@@ -154,134 +167,73 @@
             }
         }
 
-        function onBarcodeSuccess(decodedText, decodedResult) {
-            console.log(`Barcode Captured: ${decodedText}`);
-            
-            // Inject barcode directly into standard query engine filter
-            const searchField = document.getElementById('dealSearchInput');
-            searchField.value = decodedText;
-            
-            // Close camera immediately to preserve client engine performance
+        function onBarcodeSuccess(decodedText) {
+            document.getElementById('dealSearchInput').value = decodedText;
             killCameraLens();
-            
-            // Execute view refresh
             filterLiveCards();
-            
-            // Visual alert verification cue
-            alert(`Scanned UPC: ${decodedText}. Catalog filtered!`);
+            alert(`Scanned: ${decodedText}`);
         }
 
-        function onBarcodeFailure(error) {
-            // Left completely blank intentionally to prevent logging console storms during camera frame analysis passes
-        }
+        function onBarcodeFailure() {}
 
         function killCameraLens() {
             const container = document.getElementById("scannerContainer");
             container.classList.add("hidden");
-            
             if (html5QrcodeScanner) {
                 html5QrcodeScanner.stop().then(() => {
                     html5QrcodeScanner = null;
-                    document.getElementById("qr-reader").innerHTML = ""; // Hard cleanup
-                }).catch(err => console.error("Error shutting down lens engine:", err));
+                    document.getElementById("qr-reader").innerHTML = "";
+                });
             }
         }
 
         function initializeStoredZipCode() {
             const preservedZip = localStorage.getItem('ferret_finds_zip');
-            const targetInputElement = document.getElementById("storeZipInput");
-            
-            if (preservedZip && preservedZip.length === 5) {
-                targetInputElement.value = preservedZip;
-            } else {
-                targetInputElement.value = "46802";
-                localStorage.setItem('ferret_finds_zip', "46802");
-            }
+            if (preservedZip) document.getElementById("storeZipInput").value = preservedZip;
+            else document.getElementById("storeZipInput").value = "46802";
         }
 
         function updateLocationZip() {
             const zipInput = document.getElementById("storeZipInput").value.trim();
             if (zipInput.length === 5 && !isNaN(zipInput)) {
                 localStorage.setItem('ferret_finds_zip', zipInput);
-                alert(`Location successfully saved! Preserving Zip [${zipInput}] across sessions.`);
                 fetchLatestDealsFeed();
-            } else {
-                alert("Please enter a valid 5-digit zip code.");
             }
         }
 
         function startCountdownTimer() {
-            const timerDisplay = document.getElementById("countdownTimer");
-            const clockInterval = setInterval(() => {
-                if (totalSecondsLeft <= 0) {
-                    totalSecondsLeft = 3600;
-                    fetchLatestDealsFeed();
-                } else {
-                    totalSecondsLeft--;
-                }
-                let minutes = Math.floor(totalSecondsLeft / 60);
-                let seconds = totalSecondsLeft % 60;
-                let cleanMin = minutes < 10 ? "0" + minutes : minutes;
-                let cleanSec = seconds < 10 ? "0" + seconds : seconds;
-                timerDisplay.innerText = `${cleanMin}m ${cleanSec}s`;
+            setInterval(() => {
+                if (totalSecondsLeft <= 0) totalSecondsLeft = 3600;
+                else totalSecondsLeft--;
+                let min = Math.floor(totalSecondsLeft / 60);
+                let sec = totalSecondsLeft % 60;
+                document.getElementById("countdownTimer").innerText = `${min < 10 ? "0"+min : min}m ${sec < 10 ? "0"+sec : sec}s`;
             }, 1000);
         }
 
         async function fetchLatestDealsFeed() {
-            const badge = document.getElementById("syncBadge");
-            const spinner = document.getElementById("syncSpinner");
-            const cloudIcon = document.getElementById("syncIcon");
-            const textLabel = document.getElementById("syncText");
-
-            spinner.classList.remove("hidden");
-            cloudIcon.classList.add("hidden");
-            textLabel.innerText = "Pulling Feed...";
-            badge.className = "flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-xl";
-
             try {
                 const response = await requestsFetchShim("./live-deals.json");
                 loadedCloudItems = await response.json();
             } catch (error) {
-                console.log("Mocking sample catalog with smart floor categories");
                 loadedCloudItems = [
                     {"store": "DG", "name": "Ghirardelli Chocolate Hearts Valentine Bag", "upc": "747599436239", "sku": "32014588", "added": "Tuesday Penny", "originalPrice": 4.50, "clearancePrice": 0.01, "isPenny": true, "dept": "Seasonal / Holiday Row"},
                     {"store": "DG", "name": "Gain Liquid Laundry Detergent Original 46oz", "upc": "037000761421", "sku": "11405973", "added": "Markdown Drop", "originalPrice": 7.50, "clearancePrice": 2.25, "isPenny": false, "dept": "Cleaning & Household"},
                     {"store": "DG", "name": "Colgate Optic White Toothpaste 4.2oz", "upc": "035000456123", "sku": "95420136", "added": "Tuesday Penny", "originalPrice": 3.99, "clearancePrice": 0.01, "isPenny": true, "dept": "Health & Beauty Care"},
-                    {"store": "DT", "name": "Haribo Goldbears Share Size Bag 8oz", "upc": "042234001211", "sku": "54810294", "added": "Markdown Drop", "originalPrice": 1.25, "clearancePrice": 0.25, "isPenny": false, "dept": "Candy & Snacks Wall"}
+                    {"store": "DT", "name": "Haribo Goldbears Share Size Bag 8oz", "upc": "042234001211", "sku": "54810294", "added": "Markdown Drop", "originalPrice": 2.50, "clearancePrice": 0.20, "isPenny": false, "dept": "Candy & Snacks Wall"}
                 ];
             }
-
-            setTimeout(() => {
-                spinner.classList.add("hidden");
-                cloudIcon.classList.remove("hidden");
-                textLabel.innerText = "Next Sync";
-                badge.className = "flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl";
-                renderDeals();
-            }, 800);
+            renderDeals();
         }
 
         function renderDeals() {
             const pennyListContainer = document.getElementById("pennyList");
-            const counterDisplay = document.getElementById("itemCount");
-
             let matches = loadedCloudItems.filter(item => item.store === currentActiveBrand);
 
-            if (currentFilter === 'penny') {
-                matches = matches.filter(item => item.isPenny);
-            } else if (currentFilter === 'markdown') {
-                matches = matches.filter(item => !item.isPenny);
-            }
+            if (currentFilter === 'penny') matches = matches.filter(item => item.isPenny);
+            else if (currentFilter === 'markdown') matches = matches.filter(item => !item.isPenny);
 
-            counterDisplay.innerText = `${matches.length} Items Listed`;
-
-            if(matches.length === 0) {
-                pennyListContainer.innerHTML = `
-                    <div class="bg-slate-950 border border-slate-850 rounded-2xl p-6 text-center text-slate-500 text-sm">
-                        No active deals matching your chosen filters in this catalog today.
-                    </div>
-                `;
-                return;
-            }
+            document.getElementById("itemCount").innerText = `${matches.length} Items Listed`;
 
             pennyListContainer.innerHTML = matches.map(item => {
                 const percentageOff = Math.round(((item.originalPrice - item.clearancePrice) / item.originalPrice) * 100);
@@ -292,12 +244,19 @@
                 let storeHomeUrl = item.store === "DG" ? "https://www.dollargeneral.com" : "https://www.dollartree.com";
                 let googleLookupUrl = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(item.store === "DG" ? 'Dollar General' : 'Dollar Tree')} ${encodeURIComponent(item.name)} ${item.upc}`;
                 
+                // Fetch dynamic success badge style element
+                const visualSuccessBadge = generatePriceBadge(item.clearancePrice, percentageOff);
+                const isTruePennyCard = item.clearancePrice === 0.01;
+
                 return `
-                    <div class="deal-card bg-slate-950 border border-slate-850 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-md transition duration-150">
+                    <div class="deal-card bg-slate-950 border ${isTruePennyCard ? 'penny-glow' : 'border-slate-850'} rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-md transition duration-150">
                         <div>
-                            <div class="flex justify-between items-center mb-1">
-                                <span class="text-xs font-mono font-bold ${item.isPenny ? 'text-amber-400' : 'text-emerald-400'}">${item.added}</span>
-                                <span class="text-xs ${item.isPenny ? 'bg-amber-500/10 text-amber-400' : 'bg-emerald-500/10 text-emerald-400'} font-bold px-2 py-0.5 rounded font-mono">${percentageOff}% OFF</span>
+                            <div class="flex justify-between items-center mb-1.5">
+                                <span class="text-xs font-mono font-bold text-slate-500">${item.added}</span>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-xs bg-slate-900 border border-slate-800 text-slate-400 font-bold px-2 py-0.5 rounded font-mono">${percentageOff}% OFF</span>
+                                    ${visualSuccessBadge}
+                                </div>
                             </div>
                             
                             <h4 class="deal-name font-bold text-slate-100 text-sm leading-snug mb-1">
@@ -315,7 +274,7 @@
                             
                             <div class="flex items-baseline gap-2 mb-1">
                                 <span class="text-xs text-slate-500 line-through font-mono">Reg: $${item.originalPrice.toFixed(2)}</span>
-                                <span class="text-base font-black ${item.isPenny ? 'text-amber-400' : 'text-emerald-400'} font-mono">Now: $${item.clearancePrice.toFixed(2)}</span>
+                                <span class="text-base font-black ${isTruePennyCard ? 'text-amber-400' : 'text-emerald-400'} font-mono">Now: $${item.clearancePrice.toFixed(2)}</span>
                             </div>
                         </div>
 
@@ -346,7 +305,6 @@
                     </div>
                 `;
             }).join('');
-
             filterLiveCards();
         }
 
@@ -354,10 +312,8 @@
             navigator.clipboard.writeText(textToCopy);
             const textSpan = element.querySelector('span');
             const originalText = textSpan.innerText;
-            
             textSpan.innerText = "Copied Search ID! Opening Store...";
             textSpan.classList.add("text-emerald-400");
-            
             setTimeout(() => {
                 textSpan.innerText = originalText;
                 textSpan.classList.remove("text-emerald-400");
@@ -368,29 +324,22 @@
         function filterLiveCards() {
             const query = document.getElementById('dealSearchInput').value.toLowerCase().trim();
             const cards = document.querySelectorAll('.deal-card');
-
             cards.forEach(card => {
                 const nameText = card.querySelector('.deal-name').innerText.toLowerCase();
                 const upcText = card.querySelector('.deal-upc').innerText.toLowerCase();
                 const skuText = card.querySelector('.deal-sku').innerText.toLowerCase();
                 const deptText = card.querySelector('.deal-dept').innerText.toLowerCase();
-
-                if (nameText.includes(query) || upcText.includes(query) || skuText.includes(query) || deptText.includes(query)) {
-                    card.style.display = "";
-                } else {
-                    card.style.display = "none";
-                }
+                if (nameText.includes(query) || upcText.includes(query) || skuText.includes(query) || deptText.includes(query)) card.style.display = "";
+                else card.style.display = "none";
             });
         }
 
         function copyDataText(textValue, buttonElement) {
             if (textValue === "N/A") return;
             navigator.clipboard.writeText(textValue);
-            
             const originalStructure = buttonElement.innerHTML;
             buttonElement.innerHTML = `<i class="fa-solid fa-check text-emerald-400"></i> <span class="text-emerald-400">Copied</span>`;
             buttonElement.classList.add("bg-emerald-500/10");
-
             setTimeout(() => {
                 buttonElement.innerHTML = originalStructure;
                 buttonElement.classList.remove("bg-emerald-500/10");
@@ -400,11 +349,9 @@
         function switchBrand(brandCode) {
             currentActiveBrand = brandCode;
             document.querySelectorAll("[id^='tab-']").forEach(el => el.className = "py-2 text-xs font-bold rounded-lg transition text-slate-400 hover:text-white");
-            
             const activeTab = document.getElementById(`tab-${brandCode}`);
             if(brandCode === 'DG') activeTab.className = "py-2 text-xs font-bold rounded-lg transition text-amber-400 bg-amber-500/10 border border-amber-500/20";
             if(brandCode === 'DT') activeTab.className = "py-2 text-xs font-bold rounded-lg transition text-emerald-400 bg-emerald-500/10 border border-emerald-500/20";
-            
             renderDeals();
         }
 
@@ -415,10 +362,7 @@
             renderDeals();
         }
 
-        function escapeHtml(str) {
-            return str.replace(/'/g, "\\'").replace(/"/g, "&quot;");
-        }
-
+        function escapeHtml(str) { return str.replace(/'/g, "\\'").replace(/"/g, "&quot;"); }
         async function requestsFetchShim(target) { throw new Error("Triggering local environment mockup profile handler"); }
     </script>
 </body>
