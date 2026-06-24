@@ -34,13 +34,18 @@
                 </div>
             </div>
             
-            <div id="syncBadge" class="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl">
-                <span id="syncSpinner" class="hidden text-emerald-400 animate-spin text-xs"><i class="fa-solid fa-circle-notch"></i></span>
-                <span id="syncIcon" class="text-emerald-400 text-xs"><i class="fa-solid fa-cloud-arrow-down"></i></span>
-                <div>
-                    <div id="syncText" class="text-xxs font-bold text-slate-400 uppercase tracking-wider leading-none">Next Sync</div>
-                    <div id="countdownTimer" class="text-xs font-black font-mono text-emerald-400 mt-0.5 leading-none">59m 59s</div>
+            <div class="flex flex-col items-end gap-1.5">
+                <div id="syncBadge" class="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl">
+                    <span id="syncSpinner" class="hidden text-emerald-400 animate-spin text-xs"><i class="fa-solid fa-circle-notch"></i></span>
+                    <span id="syncIcon" class="text-emerald-400 text-xs"><i class="fa-solid fa-cloud-arrow-down"></i></span>
+                    <div>
+                        <div id="syncText" class="text-xxs font-bold text-slate-400 uppercase tracking-wider leading-none">Next Sync</div>
+                        <div id="countdownTimer" class="text-xs font-black font-mono text-emerald-400 mt-0.5 leading-none">59m 59s</div>
+                    </div>
                 </div>
+                <button onclick="triggerManualBackendSync(this)" class="bg-slate-800 hover:bg-slate-750 text-slate-300 text-[10px] font-bold px-2.5 py-1 rounded-md border border-slate-700 transition flex items-center gap-1 shadow cursor-pointer">
+                    <i class="fa-solid fa-rotate mr-0.5 text-slate-400"></i> Force Sync Now
+                </button>
             </div>
         </div>
 
@@ -151,6 +156,45 @@
             }
         }
 
+        // FRONTEND WEBHOOK SYNC ACTION PIPELINE
+        async function triggerManualBackendSync(buttonElement) {
+            const originalContent = buttonElement.innerHTML;
+            const syncIcon = document.getElementById("syncIcon");
+            const syncSpinner = document.getElementById("syncSpinner");
+            
+            // Lock UI and turn indicators into running state
+            buttonElement.disabled = true;
+            buttonElement.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin text-emerald-400 mr-1"></i> Syncing...`;
+            
+            if (syncIcon) syncIcon.classList.add("hidden");
+            if (syncSpinner) syncSpinner.classList.remove("hidden");
+
+            // Replace this string with your live deployed cloud engine routing path
+            const BACKEND_API_ENDPOINT = "https://your-backend-api.com/api/trigger-scrape";
+
+            try {
+                const response = await fetch(BACKEND_API_ENDPOINT, { method: 'POST' });
+                
+                if (response.ok) {
+                    alert("Success! Cloud scrapers fired. Downloading fresh inventory feed...");
+                    totalSecondsLeft = 3600; // Reset local clock cycle
+                    await fetchLatestDealsFeed();
+                } else {
+                    throw new Error("Target endpoint communication bypass fail");
+                }
+            } catch (error) {
+                console.warn("Backend missing or offline. Pulling catalog backup mockup stream instead.");
+                // Smooth fallback action so the interface still updates in development
+                await fetchLatestDealsFeed();
+            } finally {
+                // Restore original state
+                buttonElement.disabled = false;
+                buttonElement.innerHTML = originalContent;
+                if (syncIcon) syncIcon.classList.remove("hidden");
+                if (syncSpinner) syncSpinner.classList.add("hidden");
+            }
+        }
+
         function toggleCameraScanner() {
             const container = document.getElementById("scannerContainer");
             if (container.classList.contains("hidden")) {
@@ -244,7 +288,6 @@
                 let storeHomeUrl = item.store === "DG" ? "https://www.dollargeneral.com" : "https://www.dollartree.com";
                 let googleLookupUrl = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(item.store === "DG" ? 'Dollar General' : 'Dollar Tree')} ${encodeURIComponent(item.name)} ${item.upc}`;
                 
-                // Fetch dynamic success badge style element
                 const visualSuccessBadge = generatePriceBadge(item.clearancePrice, percentageOff);
                 const isTruePennyCard = item.clearancePrice === 0.01;
 
@@ -260,7 +303,7 @@
                             </div>
                             
                             <h4 class="deal-name font-bold text-slate-100 text-sm leading-snug mb-1">
-                                <button onclick="handleSmartCopy(this, '${escapeHtml(copyString)}', '${storeHomeUrl}')" class="text-left hover:text-emerald-400 transition duration-100 flex items-start gap-1 w-full group">
+                                <button onclick="handleSmartCopy(this, '${escapeHtml(copyString)}', '${storeHomeUrl}')" class="text-left hover:text-emerald-400 transition duration-100 flex items-start gap-1 w-full group text-slate-100 bg-transparent border-0 p-0 cursor-pointer">
                                     <span class="group-hover:underline">${item.name}</span>
                                     <i class="fa-regular fa-copy text-[10px] text-slate-500 opacity-60 mt-1 ml-1 group-hover:text-emerald-400"></i>
                                 </button>
@@ -283,7 +326,7 @@
                                 <span class="deal-upc font-mono text-xs text-slate-300 tracking-wider">
                                     <span class="text-slate-500 text-xxs font-sans uppercase font-bold mr-1">UPC:</span>${item.upc}
                                 </span>
-                                <button onclick="copyDataText('${item.upc}', this)" class="bg-slate-800 hover:bg-slate-750 text-emerald-400 text-xxs px-2.5 py-1 font-bold rounded flex items-center gap-1 transition">
+                                <button onclick="copyDataText('${item.upc}', this)" class="bg-slate-800 hover:bg-slate-750 text-emerald-400 text-xxs px-2.5 py-1 font-bold rounded flex items-center gap-1 transition cursor-pointer">
                                     <i class="fa-regular fa-copy"></i> <span>Copy</span>
                                 </button>
                             </div>
@@ -291,13 +334,13 @@
                                 <span class="deal-sku font-mono text-xs text-slate-300 tracking-wider">
                                     <span class="text-slate-500 text-xxs font-sans uppercase font-bold mr-1">SKU:</span>${displaySku}
                                 </span>
-                                <button onclick="copyDataText('${displaySku}', this)" class="bg-slate-800 hover:bg-slate-750 text-emerald-400 text-xxs px-2.5 py-1 font-bold rounded flex items-center gap-1 transition">
+                                <button onclick="copyDataText('${displaySku}', this)" class="bg-slate-800 hover:bg-slate-750 text-emerald-400 text-xxs px-2.5 py-1 font-bold rounded flex items-center gap-1 transition cursor-pointer">
                                     <i class="fa-regular fa-copy"></i> <span>Copy</span>
                                 </button>
                             </div>
                             
                             <div class="pt-2 border-t border-slate-850/70">
-                                <a href="${googleLookupUrl}" target="_blank" rel="noopener noreferrer" class="w-full text-center bg-slate-950 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 text-slate-300 text-xxs font-bold py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition">
+                                <a href="${googleLookupUrl}" target="_blank" rel="noopener noreferrer" class="w-full text-center bg-slate-950 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 text-slate-300 text-xxs font-bold py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition no-underline">
                                     <i class="fa-solid fa-search text-slate-400"></i> Check Google Inventory / Images
                                 </a>
                             </div>
