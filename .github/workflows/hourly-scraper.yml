@@ -30,7 +30,8 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add live-deals.json
+          # Updated to target the new data folder
+          git add data/live-deals.json
           # Only commit if there are changes to avoid empty commits
           git commit -m "Update live-deals.json [skip ci]" || echo "No changes to commit"
           git push
