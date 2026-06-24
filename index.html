@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Capybara Clearance Tracker</title>
+    <title>FerretFinds</title>
     <!-- Tailwind CSS for smooth design blocks -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <!-- FontAwesome for icons -->
@@ -20,7 +20,7 @@
             <div class="flex items-center gap-2.5">
                 <span class="text-3xl">🦫</span>
                 <div>
-                    <h1 class="text-base font-black tracking-tight text-white">Capy Deals</h1>
+                    <h1 class="text-base font-black tracking-tight text-white">FerretFinds</h1>
                     <p class="text-xxs text-slate-400 font-medium">Automated Penny Hunter</p>
                 </div>
             </div>
@@ -43,6 +43,16 @@
             </button>
             <button onclick="switchBrand('DT')" id="tab-DT" class="py-2 text-xs font-bold rounded-lg transition text-slate-400 hover:text-white">
                 🟢 Dollar Tree
+            </button>
+        </div>
+
+        <!-- ZIP CODE / LOCATION TRACKER BAR -->
+        <div class="flex gap-2 items-center bg-slate-900/40 border border-slate-850 rounded-xl p-2.5">
+            <span class="text-slate-500 text-xs pl-1"><i class="fa-solid fa-location-dot"></i></span>
+            <input type="text" id="storeZipInput" placeholder="Enter zip code..." value="46802" max="5"
+                class="bg-transparent text-sm text-white focus:outline-none placeholder-slate-600 font-mono w-28">
+            <button onclick="updateLocationZip()" class="ml-auto bg-slate-800 hover:bg-slate-750 text-white text-xxs font-bold px-3 py-1.5 rounded-md border border-slate-700 transition">
+                Set Location
             </button>
         </div>
 
@@ -93,6 +103,7 @@
         let currentActiveBrand = 'DG';
         let currentFilter = 'all';
         let currentSort = 'discount';
+        let activeZipCode = '46802';
         
         // Timer countdown parameters (starts at 60 minutes)
         let totalSecondsLeft = 3600; 
@@ -102,6 +113,18 @@
             startCountdownTimer();
             fetchLatestDealsFeed();
         });
+
+        // ZIP CODE UPDATE ACTION
+        function updateLocationZip() {
+            const zipInput = document.getElementById("storeZipInput").value.trim();
+            if (zipInput.length === 5 && !isNaN(zipInput)) {
+                activeZipCode = zipInput;
+                alert(`Location shifted to Zip: ${activeZipCode}. Reloading local catalog metrics...`);
+                fetchLatestDealsFeed();
+            } else {
+                alert("Please enter a valid 5-digit zip code.");
+            }
+        }
 
         // 1. RUN TIMER COUNTDOWN
         function startCountdownTimer() {
