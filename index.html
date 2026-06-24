@@ -156,38 +156,25 @@
             }
         }
 
-        // FRONTEND WEBHOOK SYNC ACTION PIPELINE
+        // 🔥 FIXED: Direct Static JSON Fetcher - No More CORS Errors!
         async function triggerManualBackendSync(buttonElement) {
             const originalContent = buttonElement.innerHTML;
             const syncIcon = document.getElementById("syncIcon");
             const syncSpinner = document.getElementById("syncSpinner");
             
-            // Lock UI and turn indicators into running state
             buttonElement.disabled = true;
             buttonElement.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin text-emerald-400 mr-1"></i> Syncing...`;
             
             if (syncIcon) syncIcon.classList.add("hidden");
             if (syncSpinner) syncSpinner.classList.remove("hidden");
 
-            // Replace this string with your live deployed cloud engine routing path
-            const BACKEND_API_ENDPOINT = "https://your-backend-api.com/api/trigger-scrape";
-
             try {
-                const response = await fetch(BACKEND_API_ENDPOINT, { method: 'POST' });
-                
-                if (response.ok) {
-                    alert("Success! Cloud scrapers fired. Downloading fresh inventory feed...");
-                    totalSecondsLeft = 3600; // Reset local clock cycle
-                    await fetchLatestDealsFeed();
-                } else {
-                    throw new Error("Target endpoint communication bypass fail");
-                }
-            } catch (error) {
-                console.warn("Backend missing or offline. Pulling catalog backup mockup stream instead.");
-                // Smooth fallback action so the interface still updates in development
+                // Fetch direct from your local live-deals.json populated by GitHub
                 await fetchLatestDealsFeed();
+                totalSecondsLeft = 3600; // Reset local clock cycle
+            } catch (error) {
+                console.error("Data pipeline refresh exception:", error);
             } finally {
-                // Restore original state
                 buttonElement.disabled = false;
                 buttonElement.innerHTML = originalContent;
                 if (syncIcon) syncIcon.classList.remove("hidden");
