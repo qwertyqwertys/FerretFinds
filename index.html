@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FerretFinds</title>
-    <!-- Tailwind CSS for smooth design blocks -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         body { background-color: #020617; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
@@ -14,7 +12,6 @@
 </head>
 <body class="p-4 max-w-lg mx-auto min-h-screen flex flex-col justify-between">
 
-    <!-- TOP CONTROL NAVIGATION -->
     <header class="space-y-4">
         <div class="flex justify-between items-center bg-slate-900/60 border border-slate-850 p-4 rounded-2xl shadow-xl">
             <div class="flex items-center gap-2.5">
@@ -25,7 +22,6 @@
                 </div>
             </div>
             
-            <!-- Dynamic Background Sync Timer Status -->
             <div id="syncBadge" class="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl">
                 <span id="syncSpinner" class="hidden text-emerald-400 animate-spin text-xs"><i class="fa-solid fa-circle-notch"></i></span>
                 <span id="syncIcon" class="text-emerald-400 text-xs"><i class="fa-solid fa-cloud-arrow-down"></i></span>
@@ -36,7 +32,6 @@
             </div>
         </div>
 
-        <!-- STORE SELECTOR TABS -->
         <div class="grid grid-cols-2 gap-2 bg-slate-950 p-1.5 border border-slate-850 rounded-xl">
             <button onclick="switchBrand('DG')" id="tab-DG" class="py-2 text-xs font-bold rounded-lg transition text-amber-400 bg-amber-500/10 border border-amber-500/20">
                 🟡 Dollar General
@@ -46,7 +41,6 @@
             </button>
         </div>
 
-        <!-- ZIP CODE / LOCATION TRACKER BAR -->
         <div class="flex gap-2 items-center bg-slate-900/40 border border-slate-850 rounded-xl p-2.5">
             <span class="text-slate-500 text-xs pl-1"><i class="fa-solid fa-location-dot"></i></span>
             <input type="text" id="storeZipInput" placeholder="Enter zip code..." value="46802" max="5"
@@ -56,7 +50,6 @@
             </button>
         </div>
 
-        <!-- DEALS FILTERS -->
         <div class="flex gap-2 text-xs font-medium border-b border-slate-850 pb-2">
             <button onclick="setFilter('all')" id="filter-all" class="px-3 py-1 rounded-full bg-slate-800 text-white font-bold">All</button>
             <button onclick="setFilter('penny')" id="filter-penny" class="px-3 py-1 rounded-full text-slate-400 hover:text-white">Just Pennies</button>
@@ -64,7 +57,6 @@
         </div>
     </header>
 
-    <!-- LIVE DATABASE FEED DISPLAY -->
     <main class="my-4 flex-grow">
         <section id="dealSection" class="space-y-4">
             <div class="flex justify-between items-center">
@@ -72,7 +64,6 @@
                 <span id="itemCount" class="text-xxs bg-slate-900 text-slate-400 px-2 py-0.5 rounded-md font-mono font-bold border border-slate-800">0 Items Loaded</span>
             </div>
             
-            <!-- LIVE SEARCH, SKU, AND BARCODE SCANNER CAPTURE FIELD -->
             <div class="relative">
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
                     <i class="fa-solid fa-magnifying-glass text-xs"></i>
@@ -81,7 +72,6 @@
                     class="w-full bg-slate-950 border border-slate-850 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 text-white placeholder-slate-500 transition font-sans">
             </div>
 
-            <!-- This is where product entries display dynamically -->
             <div id="pennyList" class="space-y-3">
                 <div class="bg-slate-950 border border-slate-850 rounded-2xl p-8 text-center text-slate-500 text-sm">
                     <i class="fa-solid fa-circle-notch animate-spin mb-2 text-emerald-400 text-lg block"></i>
@@ -91,12 +81,10 @@
         </section>
     </main>
 
-    <!-- FOOTER SIGNATURE -->
     <footer class="text-center pt-4 border-t border-t-slate-900">
         <p class="text-xxs text-slate-600 font-mono tracking-wide">&copy; 2026 CAPYBARA SCIENCE LABS &bull; DEALS REFRESHED DAILY</p>
     </footer>
 
-    <!-- INTERFACE DRIVER LOGIC -->
     <script>
         // Data states
         let loadedCloudItems = [];
@@ -182,7 +170,7 @@
             }, 800);
         }
 
-        // 3. RENDER CARDS DYNAMICALLY WITH INTERACTIVE LINKS
+        // 3. RENDER CARDS DYNAMICALLY WITH SAFE EMBEDDED GOOGLE SHOPPING LINKS
         function renderDeals() {
             const pennyListContainer = document.getElementById("pennyList");
             const counterDisplay = document.getElementById("itemCount");
@@ -210,15 +198,11 @@
                 const percentageOff = Math.round(((item.originalPrice - item.clearancePrice) / item.originalPrice) * 100);
                 const displaySku = item.sku ? item.sku : "N/A";
                 
-                // Construct target external search link depending on the store brand code
-                let targetUrl = "#";
-                if (item.store === "DG") {
-                    // Generates direct lookup inside Dollar General database via UPC query
-                    targetUrl = `https://www.dollargeneral.com/search?q=${item.upc}`;
-                } else if (item.store === "DT") {
-                    // Generates fallback search index lookup inside Dollar Tree database via text string query
-                    targetUrl = `https://www.dollartree.com/search/go?w=${encodeURIComponent(item.name)}`;
-                }
+                // Construct a custom target search query to avoid corporate firewalls blocking direct linkages
+                let storeQueryText = item.store === "DG" ? "Dollar General" : "Dollar Tree";
+                
+                // Targets Google Shopping with exact store keyword scope + universal barcode identifier
+                let targetUrl = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(storeQueryText + ' ' + item.upc)}`;
                 
                 return `
                     <div class="deal-card bg-slate-950 border border-slate-850 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-md transition duration-150">
@@ -228,7 +212,6 @@
                                 <span class="text-xs ${item.isPenny ? 'bg-amber-500/10 text-amber-400' : 'bg-emerald-500/10 text-emerald-400'} font-bold px-2 py-0.5 rounded font-mono">${percentageOff}% OFF</span>
                             </div>
                             
-                            <!-- CLICKABLE TITLE ANCHOR LINK BLOCK -->
                             <h4 class="deal-name font-bold text-slate-100 text-sm leading-snug mb-2">
                                 <a href="${targetUrl}" target="_blank" rel="noopener noreferrer" class="hover:text-emerald-400 hover:underline transition duration-100 decoration-emerald-400/50 flex items-center gap-1 inline-flex">
                                     <span>${item.name}</span>
