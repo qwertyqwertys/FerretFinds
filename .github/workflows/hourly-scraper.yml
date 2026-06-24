@@ -41,12 +41,16 @@ def scrape_freebie_guy_master_list():
             if len(clean_name) < 3:
                 clean_name = "Premium Clearance Item"
 
+            # Automatically extract an 8-digit store SKU out of the universal barcode text sequence
+            generated_sku = detected_upc[-8:] if len(detected_upc) >= 8 else detected_upc
+
             # Check for duplicates so we don't spam the list with the exact same barcode twice
             if not any(d['upc'] == detected_upc for d in extracted_deals):
                 extracted_deals.append({
                     "store": "DG",
                     "name": clean_name,
                     "upc": detected_upc,
+                    "sku": generated_sku, # New SKU data field injected here
                     "added": "Tuesday Penny Drop",
                     "originalPrice": 4.50, # Baseline placeholder for layout matching
                     "clearancePrice": 0.01,
