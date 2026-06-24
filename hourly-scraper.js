@@ -8,7 +8,7 @@ const SOURCE_SITES = [
         name: "The Freebie Guy DG",
         url: "https://thefreebieguy.com/dollar-general-penny-list-for-june-23-2026/",
         selectors: {
-            itemRow: ".entry-content p", // Where text rows usually sit
+            itemRow: ".entry-content p, .entry-content li", // 🌟 UPDATED: Checks both paragraphs AND list items
             brand: "DG"
         }
     },
@@ -16,7 +16,7 @@ const SOURCE_SITES = [
         name: "The Freebie Guy DT",
         url: "https://thefreebieguy.com/dollar-tree-penny-items-guide/",
         selectors: {
-            itemRow: ".entry-content p", // Fixed to parse paragraph elements properly
+            itemRow: ".entry-content p, .entry-content li", // 🌟 UPDATED: Captures the list items where DT deals live
             brand: "DT"
         }
     }
