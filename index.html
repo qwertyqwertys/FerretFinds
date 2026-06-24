@@ -229,7 +229,7 @@
 
         async function fetchLatestDealsFeed() {
             try {
-                const response = await requestsFetchShim("./live-deals.json");
+                const response = await requestsFetchShim("./data/live-deals.json");
                 loadedCloudItems = await response.json();
             } catch (error) {
                 loadedCloudItems = [
