@@ -6,8 +6,11 @@
     <title>FerretFinds</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
         body { background-color: #020617; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
+        /* Smooth video frame scaling */
+        #qr-reader video { object-fit: cover !important; border-radius: 12px; }
     </style>
 </head>
 <body class="p-4 max-w-lg mx-auto min-h-screen flex flex-col justify-between">
@@ -43,7 +46,6 @@
 
         <div class="flex gap-2 items-center bg-slate-900/40 border border-slate-850 rounded-xl p-2.5">
             <span class="text-slate-500 text-xs pl-1"><i class="fa-solid fa-location-dot"></i></span>
-            <!-- INPUT BACKED BY STORAGE KEYCHAIN -->
             <input type="text" id="storeZipInput" placeholder="Enter zip code..." max="5"
                 class="bg-transparent text-sm text-white focus:outline-none placeholder-slate-600 font-mono w-28">
             <button onclick="updateLocationZip()" class="ml-auto bg-slate-800 hover:bg-slate-750 text-white text-xxs font-bold px-3 py-1.5 rounded-md border border-slate-700 transition">
@@ -59,18 +61,36 @@
     </header>
 
     <main class="my-4 flex-grow">
+        <div id="scannerContainer" class="hidden mb-4 bg-slate-950 border border-slate-850 rounded-2xl p-3 shadow-2xl relative">
+            <div class="flex justify-between items-center mb-2 px-1">
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span> Live Lens Scanner
+                </span>
+                <button onclick="toggleCameraScanner()" class="text-slate-400 hover:text-white text-sm px-2 py-0.5 rounded bg-slate-900 border border-slate-800">
+                    <i class="fa-solid fa-xmark"></i> Close
+                </button>
+            </div>
+            <div id="qr-reader" class="w-full overflow-hidden border border-slate-800 rounded-xl bg-black"></div>
+            <p class="text-[10px] text-slate-500 font-medium text-center mt-2 font-sans">Center the product's barcode label inside the lens frame</p>
+        </div>
+
         <section id="dealSection" class="space-y-4">
             <div class="flex justify-between items-center">
                 <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400"><i class="fa-solid fa-barcode mr-1"></i> Active Inventory Catalog</h3>
                 <span id="itemCount" class="text-xxs bg-slate-900 text-slate-400 px-2 py-0.5 rounded-md font-mono font-bold border border-slate-800">0 Items Loaded</span>
             </div>
             
-            <div class="relative">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
-                    <i class="fa-solid fa-magnifying-glass text-xs"></i>
-                </span>
-                <input type="text" id="dealSearchInput" onkeyup="filterLiveCards()" placeholder="Search names, UPC codes, or departments..." 
-                    class="w-full bg-slate-950 border border-slate-850 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 text-white placeholder-slate-500 transition font-sans">
+            <div class="flex gap-2 relative">
+                <div class="relative flex-grow">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                        <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                    </span>
+                    <input type="text" id="dealSearchInput" onkeyup="filterLiveCards()" placeholder="Search names, UPC codes, or departments..." 
+                        class="w-full bg-slate-950 border border-slate-850 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 text-white placeholder-slate-500 transition font-sans">
+                </div>
+                <button onclick="toggleCameraScanner()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 rounded-xl flex items-center justify-center transition shadow-md shadow-emerald-500/10">
+                    <i class="fa-solid fa-camera text-base"></i>
+                </button>
             </div>
 
             <div id="pennyList" class="space-y-3">
@@ -92,15 +112,81 @@
         let currentFilter = 'all';
         let currentSort = 'discount';
         let totalSecondsLeft = 3600; 
+        
+        // Scan State Tracker
+        let html5QrcodeScanner = null;
 
-        // BOOTSTRAP ENVIRONMENT SETUP
         window.addEventListener('DOMContentLoaded', () => {
             initializeStoredZipCode();
             startCountdownTimer();
             fetchLatestDealsFeed();
         });
 
-        // RECOVERY ROUTINE: Pull existing data or fall back to default
+        // LIVE SCANNER CONTROLLER SUBSYSTEM
+        function toggleCameraScanner() {
+            const container = document.getElementById("scannerContainer");
+            
+            if (container.classList.contains("hidden")) {
+                container.classList.remove("hidden");
+                
+                // Initialize modern parser logic to read basic barcode sequences
+                html5QrcodeScanner = new Html5Qrcode("qr-reader");
+                
+                const config = { 
+                    fps: 15, 
+                    qrbox: { width: 260, height: 140 }, // Wide rectangular box matching row barcodes
+                    aspectRatio: 1.777778 // 16:9 box matrix
+                };
+
+                // Request clean access stream targeting back camera arrays
+                html5QrcodeScanner.start(
+                    { facingMode: "environment" }, 
+                    config, 
+                    onBarcodeSuccess,
+                    onBarcodeFailure
+                ).catch(err => {
+                    console.error("Camera access failed:", err);
+                    alert("Unable to open camera lens. Check site security permissions!");
+                    container.classList.add("hidden");
+                });
+            } else {
+                killCameraLens();
+            }
+        }
+
+        function onBarcodeSuccess(decodedText, decodedResult) {
+            console.log(`Barcode Captured: ${decodedText}`);
+            
+            // Inject barcode directly into standard query engine filter
+            const searchField = document.getElementById('dealSearchInput');
+            searchField.value = decodedText;
+            
+            // Close camera immediately to preserve client engine performance
+            killCameraLens();
+            
+            // Execute view refresh
+            filterLiveCards();
+            
+            // Visual alert verification cue
+            alert(`Scanned UPC: ${decodedText}. Catalog filtered!`);
+        }
+
+        function onBarcodeFailure(error) {
+            // Left completely blank intentionally to prevent logging console storms during camera frame analysis passes
+        }
+
+        function killCameraLens() {
+            const container = document.getElementById("scannerContainer");
+            container.classList.add("hidden");
+            
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(() => {
+                    html5QrcodeScanner = null;
+                    document.getElementById("qr-reader").innerHTML = ""; // Hard cleanup
+                }).catch(err => console.error("Error shutting down lens engine:", err));
+            }
+        }
+
         function initializeStoredZipCode() {
             const preservedZip = localStorage.getItem('ferret_finds_zip');
             const targetInputElement = document.getElementById("storeZipInput");
@@ -108,12 +194,11 @@
             if (preservedZip && preservedZip.length === 5) {
                 targetInputElement.value = preservedZip;
             } else {
-                targetInputElement.value = "46802"; // Standard Fallback
+                targetInputElement.value = "46802";
                 localStorage.setItem('ferret_finds_zip', "46802");
             }
         }
 
-        // PERSISTENCE COMMIT ROUTINE
         function updateLocationZip() {
             const zipInput = document.getElementById("storeZipInput").value.trim();
             if (zipInput.length === 5 && !isNaN(zipInput)) {
@@ -222,7 +307,6 @@
                                 </button>
                             </h4>
 
-                            <!-- VISUAL DEPARTMENT LOCATOR CHIP -->
                             <div class="mb-2.5">
                                 <span class="deal-dept bg-slate-900 border border-slate-800 text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded-md inline-flex items-center gap-1">
                                     <i class="fa-solid fa-layer-group text-[9px] text-slate-500"></i> ${floorDepartment}
