@@ -406,7 +406,7 @@
         }
 
         function escapeHtml(str) { return str.replace(/'/g, "\\'").replace(/"/g, "&quot;"); }
-        async function requestsFetchShim(target) { throw new Error("Triggering local environment mockup profile handler"); }
+        async function requestsFetchShim(target) { return fetch(target); }
     </script>
 </body>
 </html>
