@@ -27,13 +27,20 @@ async function runMasterScraper() {
     console.log("🚀 Starting Multi-Site Scraping Run...");
 
     for (const site of SOURCE_SITES) {
+        console.log(`🔍 Checking site: ${site.name} at ${site.url}`);
         try {
             const { data } = await axios.get(site.url, { headers: REQUEST_HEADERS });
             const $ = cheerio.load(data);
             
-            $(site.selectors.itemRow).each((index, element) => {
+            const elements = $(site.selectors.itemRow);
+            console.log(`📊 Found ${elements.length} elements matching your selector for ${site.name}`);
+            
+            elements.each((index, element) => {
                 const rawText = $(element).text().trim();
-                // Basic validation: must have some length and at least one digit
+                
+                // Debugging: log the text to see what we are catching
+                if (index < 5) console.log(`   Sample text from ${site.name}: ${rawText.substring(0, 40)}...`);
+
                 if (rawText.length > 10 && /\d+/.test(rawText)) {
                     const cleanName = rawText.replace(/upc|sku|penny/gi, '').replace(/[:\-\d]/g, '').trim();
                     const extractedNumbers = rawText.match(/\d{8,12}/g);
@@ -62,9 +69,8 @@ async function runMasterScraper() {
     const dir = './data';
     if (!fs.existsSync(dir)){ fs.mkdirSync(dir); }
 
-    // Save the file
     fs.writeFileSync(path.join(dir, 'live-deals.txt'), JSON.stringify(masterCatalog, null, 2));
-    console.log(`✅ Success! Saved ${masterCatalog.length} items to data/live-deals.txt`);
+    console.log(`✅ Success! Saved ${masterCatalog.length} total items to data/live-deals.txt`);
 }
 
 runMasterScraper();
