@@ -229,9 +229,11 @@
 
         async function fetchLatestDealsFeed() {
             try {
+                // Fetch directly from your raw GitHub file
                 const response = await requestsFetchShim("./data/live-deals.txt");
                 loadedCloudItems = await response.json();
             } catch (error) {
+                console.warn("Falling back to local demo data due to fetch error.");
                 loadedCloudItems = [
                     {"store": "DG", "name": "Ghirardelli Chocolate Hearts Valentine Bag", "upc": "747599436239", "sku": "32014588", "added": "Tuesday Penny", "originalPrice": 4.50, "clearancePrice": 0.01, "isPenny": true, "dept": "Seasonal / Holiday Row", "timestamp": Date.now()},
                     {"store": "DG", "name": "Gain Liquid Laundry Detergent Original 46oz", "upc": "037000761421", "sku": "11405973", "added": "Markdown Drop", "originalPrice": 7.50, "clearancePrice": 2.25, "isPenny": false, "dept": "Cleaning & Household"},
@@ -385,7 +387,12 @@
         }
 
         function escapeHtml(str) { return str.replace(/'/g, "\\'").replace(/"/g, "&quot;"); }
-        async function requestsFetchShim(target) { return fetch(target); }
+
+        // --- UPDATED FETCH SHIM ---
+        async function requestsFetchShim(target) { 
+            const githubRawUrl = "https://raw.githubusercontent.com/qwertyqwertys/FerretFinds/main/data/live-deals.txt";
+            return fetch(githubRawUrl); 
+        }
     </script>
 </body>
 </html>
