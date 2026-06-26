@@ -1,0 +1,3 @@
+[
+  {"store": "DG", "name": "Gain Detergent", "upc": "037000761421", "sku": "11405973", "added": "Markdown", "originalPrice": 7.50, "clearancePrice": 2.25, "isPenny": false, "dept": "Household", "timestamp": 1719430000000}
+]
