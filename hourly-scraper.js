@@ -2,6 +2,7 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 const SOURCE_SITES = [
     {
@@ -19,6 +20,20 @@ const SOURCE_SITES = [
 const REQUEST_HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 };
+
+function pushToGitHub() {
+    console.log("📤 Pushing changes to repository...");
+    try {
+        execSync('git config --global user.name "github-actions[bot]"');
+        execSync('git config --global user.email "github-actions[bot]@users.noreply.github.com"');
+        execSync('git add data/live-deals.txt');
+        execSync('git commit -m "chore: auto-update penny deals [skip ci]"');
+        execSync('git push');
+        console.log("✅ Changes pushed successfully!");
+    } catch (error) {
+        console.error("❌ Git push failed:", error.message);
+    }
+}
 
 async function runMasterScraper() {
     let masterCatalog = [];
@@ -61,9 +76,11 @@ async function runMasterScraper() {
     const dir = './data';
     if (!fs.existsSync(dir)){ fs.mkdirSync(dir); }
 
-    // Saving as .txt to bypass routing
     fs.writeFileSync(path.join(dir, 'live-deals.txt'), JSON.stringify(masterCatalog, null, 2));
     console.log(`✅ Success! Saved ${masterCatalog.length} items to data/live-deals.txt`);
+    
+    // Trigger the upload back to your repo
+    pushToGitHub();
 }
 
 runMasterScraper();
