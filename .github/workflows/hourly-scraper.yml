@@ -1,12 +1,12 @@
-name: Hourly Scraper 
+name: Hourly Scraper
 
 on:
   schedule:
-    - cron: '0 * * * *' # Runs at the top of every hour
-  workflow_dispatch: # Allows you to manually trigger it in the Actions tab
+    - cron: '0 * * * *'
+  workflow_dispatch:
 
 permissions:
-  contents: write # REQUIRED: This allows the bot to push changes back to the repo
+  contents: write
 
 jobs:
   build:
@@ -30,8 +30,6 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          # Updated to target the new .txt file in the data folder
           git add data/live-deals.txt
-          # Only commit if there are changes to avoid empty commits
           git commit -m "Update deals data [skip ci]" || echo "No changes to commit"
           git push
